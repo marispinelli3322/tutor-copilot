@@ -12,27 +12,23 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Users, Play, Search, GraduationCap, X } from "lucide-react";
 import type { GameWithProfessors } from "@/lib/queries";
+import { useLocale } from "@/lib/use-locale";
 
 interface GameListProps {
   games: GameWithProfessors[];
 }
 
 export function GameList({ games }: GameListProps) {
+  const { t } = useLocale();
   const [search, setSearch] = useState("");
   const [professorFilter, setProfessorFilter] = useState("");
   const [showProfessorDropdown, setShowProfessorDropdown] = useState(false);
 
-  // Extract unique professors (excluding ADMIN, ARBITRO TESTE, etc.)
   const allProfessors = useMemo(() => {
     const profs = new Set<string>();
     for (const game of games) {
       for (const p of game.professors) {
-        if (
-          p &&
-          p !== "ADMIN" &&
-          p !== "ARBITRO TESTE" &&
-          !p.startsWith("ADMIN")
-        ) {
+        if (p && p !== "ADMIN" && p !== "ARBITRO TESTE") {
           profs.add(p);
         }
       }
@@ -40,23 +36,17 @@ export function GameList({ games }: GameListProps) {
     return Array.from(profs).sort();
   }, [games]);
 
-  // Filter professors matching the search
   const filteredProfessors = useMemo(() => {
     if (!professorFilter) return allProfessors;
     const q = professorFilter.toLowerCase();
     return allProfessors.filter((p) => p.toLowerCase().includes(q));
   }, [allProfessors, professorFilter]);
 
-  // Filter games
   const filteredGames = useMemo(() => {
     let result = games;
-
-    // Filter by professor
     if (professorFilter && allProfessors.includes(professorFilter)) {
       result = result.filter((g) => g.professors.includes(professorFilter));
     }
-
-    // Filter by search text (game name/code)
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -65,7 +55,6 @@ export function GameList({ games }: GameListProps) {
           (g.nome && g.nome.toLowerCase().includes(q))
       );
     }
-
     return result;
   }, [games, search, professorFilter, allProfessors]);
 
@@ -73,12 +62,11 @@ export function GameList({ games }: GameListProps) {
     <div>
       {/* Filters */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-        {/* Professor filter */}
         <div className="relative flex-1">
           <GraduationCap className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
           <input
             type="text"
-            placeholder="Filtrar por professor..."
+            placeholder={t.filterByProfessor}
             value={professorFilter}
             onChange={(e) => {
               setProfessorFilter(e.target.value);
@@ -115,19 +103,18 @@ export function GameList({ games }: GameListProps) {
               ))}
               {filteredProfessors.length > 20 && (
                 <div className="px-4 py-2 text-xs text-[#94A3B8]">
-                  +{filteredProfessors.length - 20} mais...
+                  +{filteredProfessors.length - 20} more...
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Game search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
           <input
             type="text"
-            placeholder="Pesquisar jogo por nome..."
+            placeholder={t.searchGame}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-8 text-sm text-[#1E293B] placeholder:text-[#94A3B8] focus:border-[#C5A832] focus:outline-none focus:ring-2 focus:ring-[#C5A832]/20"
@@ -145,22 +132,19 @@ export function GameList({ games }: GameListProps) {
 
       {/* Results count */}
       <div className="mb-4 text-sm text-[#64748B]">
-        {filteredGames.length} jogo{filteredGames.length !== 1 ? "s" : ""} encontrado
-        {filteredGames.length !== 1 ? "s" : ""}
+        {t.gamesFound(filteredGames.length)}
         {professorFilter && allProfessors.includes(professorFilter) && (
           <span>
-            {" "}para <strong className="text-[#1A365D]">{professorFilter}</strong>
+            {" "}{t.forProfessor}{" "}
+            <strong className="text-[#1A365D]">{professorFilter}</strong>
           </span>
         )}
       </div>
 
-      {/* Game cards */}
       {filteredGames.length === 0 && (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-[#64748B]">
-              Nenhum jogo encontrado com os filtros aplicados.
-            </p>
+            <p className="text-sm text-[#64748B]">{t.noGamesFound}</p>
           </CardContent>
         </Card>
       )}
@@ -187,12 +171,12 @@ export function GameList({ games }: GameListProps) {
                 <div className="flex items-center gap-4 text-sm text-[#64748B]">
                   <span className="flex items-center gap-1.5">
                     <Users className="h-4 w-4" />
-                    {game.num_empresas} equipes
+                    {game.num_empresas} {t.teams}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Play className="h-4 w-4" />
-                    {game.ultimo_periodo_processado} rodada
-                    {game.ultimo_periodo_processado > 1 ? "s" : ""}
+                    {game.ultimo_periodo_processado}{" "}
+                    {game.ultimo_periodo_processado > 1 ? t.rounds : t.round}
                   </span>
                 </div>
                 {game.professors.length > 0 && (

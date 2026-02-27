@@ -7,6 +7,8 @@ import {
   getProfitabilityData,
   getBenchmarkingData,
 } from "@/lib/data-provider";
+import { getTranslations } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 
 export const maxDuration = 60;
 
@@ -16,16 +18,17 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const groupId = parseInt(searchParams.get("groupId") || "0", 10);
   const period = parseInt(searchParams.get("period") || "0", 10);
+  const locale = (searchParams.get("locale") || "pt") as Locale;
+  const t = getTranslations(locale === "en" ? "en" : "pt");
 
   if (!groupId || !period) {
     return NextResponse.json(
-      { error: "groupId e period são obrigatórios" },
+      { error: "groupId and period are required" },
       { status: 400 }
     );
   }
 
   try {
-    // Fetch all data in parallel
     const [game, teams, efficiency, profitability, benchmarking] =
       await Promise.all([
         getGameDetails(groupId),
@@ -36,34 +39,33 @@ export async function GET(request: NextRequest) {
       ]);
 
     if (!game) {
-      return NextResponse.json({ error: "Jogo não encontrado" }, { status: 404 });
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
 
-    // Build context summary for Claude
-    const teamNames = teams.map((t) => t.nome || `Equipe ${t.numero}`).join(", ");
+    const teamNames = teams.map((t) => t.nome || `Team ${t.numero}`).join(", ");
 
     // Efficiency summary
     const effSummary = Object.entries(efficiency)
       .map(([key, report]) => {
         const overloaded = report.teams
           .filter((t) => t.unmetDemand > 0)
-          .map((t) => `${t.team} (${t.unmetDemand} perdidos, ${t.utilizationRate}%)`);
+          .map((t) => `${t.team} (${t.unmetDemand} lost, ${t.utilizationRate}%)`);
         const idle = report.teams
           .filter((t) => t.status === "overcapacity")
           .map((t) => `${t.team} (${t.utilizationRate}%)`);
         const ok = report.teams
           .filter((t) => t.status === "ok" && t.unmetDemand === 0)
           .map((t) => `${t.team} (${t.utilizationRate}%)`);
-        return `${report.service}:\n  Sobrecarga: ${overloaded.length > 0 ? overloaded.join(", ") : "nenhum"}\n  Ociosidade: ${idle.length > 0 ? idle.join(", ") : "nenhum"}\n  OK: ${ok.join(", ") || "nenhum"}`;
+        return `${report.service}:\n  Overload: ${overloaded.length > 0 ? overloaded.join(", ") : "none"}\n  Idle: ${idle.length > 0 ? idle.join(", ") : "none"}\n  OK: ${ok.join(", ") || "none"}`;
       })
       .join("\n\n");
 
-    // Profitability summary - group by team
+    // Profitability summary
     const profByTeam = new Map<string, { services: string[] }>();
     for (const p of profitability) {
       if (!profByTeam.has(p.team)) profByTeam.set(p.team, { services: [] });
       profByTeam.get(p.team)!.services.push(
-        `${p.service}: receita bruta R$${(p.totalRevenue / 1e6).toFixed(1)}M, glosa R$${(p.disallowances / 1e6).toFixed(1)}M, margem contribuição ${p.marginPercent.toFixed(1)}%`
+        `${p.service}: gross revenue R$${(p.totalRevenue / 1e6).toFixed(1)}M, disallowances R$${(p.disallowances / 1e6).toFixed(1)}M, contribution margin ${p.marginPercent.toFixed(1)}%`
       );
     }
     const profSummary = Array.from(profByTeam.entries())
@@ -74,47 +76,49 @@ export async function GET(request: NextRequest) {
     const benchSummary = benchmarking
       .map(
         (b) =>
-          `#${b.overallRanking} ${b.team}: ação R$${b.sharePrice.toFixed(2)}, receita R$${(b.netRevenue / 1e6).toFixed(1)}M, resultado op. R$${(b.netOperatingIncome / 1e6).toFixed(1)}M (margem ${b.operatingMargin.toFixed(1)}%), ${b.patientsAttended} vidas, ${b.registeredDoctors} médicos`
+          `#${b.overallRanking} ${b.team}: share R$${b.sharePrice.toFixed(2)}, revenue R$${(b.netRevenue / 1e6).toFixed(1)}M, op. result R$${(b.netOperatingIncome / 1e6).toFixed(1)}M (margin ${b.operatingMargin.toFixed(1)}%), ${b.patientsAttended} patients, ${b.registeredDoctors} doctors`
       )
       .join("\n");
 
-    const prompt = `Você é um consultor especialista em jogos de simulação de hospitais. Analise os dados abaixo do Trimestre ${period} do jogo "${game.codigo}" (${game.jogo_nome}) com ${teams.length} equipes competindo: ${teamNames}.
+    const langInstruction = t.aiLanguage;
 
-## DADOS DE EFICIÊNCIA OPERACIONAL (Capacidade vs Demanda)
+    const prompt = `You are a specialist consultant in hospital business simulation games. Analyze the data below for Quarter ${period} of game "${game.codigo}" (${game.jogo_nome}) with ${teams.length} teams competing: ${teamNames}.
+
+## OPERATIONAL EFFICIENCY DATA (Capacity vs Demand)
 
 ${effSummary}
 
-## DADOS DE LUCRATIVIDADE (por linha de serviço)
+## PROFITABILITY DATA (by service line)
 
 ${profSummary}
 
-## RANKING GERAL (Benchmarking)
+## OVERALL RANKING (Benchmarking)
 
 ${benchSummary}
 
 ---
 
-Com base nestes dados, gere um Guia de Facilitação para o tutor/professor que vai conduzir a discussão em sala. O guia deve conter:
+Based on this data, generate a Facilitation Guide for the tutor/professor who will lead the class discussion. The guide must contain:
 
-1. **RESUMO EXECUTIVO** (3-4 frases): Visão geral do trimestre — quem está se destacando, quais são as principais tensões competitivas.
+1. **EXECUTIVE SUMMARY** (3-4 sentences): Quarter overview — who is standing out, what are the main competitive tensions.
 
-2. **PERGUNTAS DE ABERTURA** (3 perguntas): Perguntas provocativas para abrir a discussão, sem revelar diretamente os dados mas estimulando reflexão.
+2. **OPENING QUESTIONS** (3 questions): Provocative questions to open the discussion, without directly revealing data but stimulating reflection.
 
-3. **ANÁLISE POR TEMA** — Para cada tema abaixo, forneça 2 perguntas direcionadas e 1 insight que o tutor pode usar:
-   - Gestão de Capacidade (eficiência operacional)
-   - Estratégia de Preços e Receita (lucratividade)
-   - Posicionamento Competitivo (benchmarking)
+3. **ANALYSIS BY THEME** — For each theme below, provide 2 targeted questions and 1 insight the tutor can use:
+   - Capacity Management (operational efficiency)
+   - Pricing and Revenue Strategy (profitability)
+   - Competitive Positioning (benchmarking)
 
-4. **DESTAQUES PARA DISCUSSÃO** (3-4 bullets): Situações específicas de equipes que merecem atenção — decisões ousadas, erros evidentes, recuperações, ou estratégias divergentes.
+4. **DISCUSSION HIGHLIGHTS** (3-4 bullets): Specific team situations that deserve attention — bold decisions, evident mistakes, recoveries, or divergent strategies.
 
-5. **PERGUNTA DE ENCERRAMENTO** (1 pergunta): Uma pergunta reflexiva para fechar a sessão, conectando os aprendizados ao mundo real da gestão hospitalar.
+5. **CLOSING QUESTION** (1 question): A reflective question to close the session, connecting learnings to real-world hospital management.
 
-Regras:
-- Use linguagem profissional mas acessível
-- Referencie equipes pelo nome
-- Inclua números específicos quando relevante
-- Escreva em português brasileiro
-- Use formatação markdown`;
+Rules:
+- Use professional but accessible language
+- Reference teams by name
+- Include specific numbers when relevant
+- Write entirely in ${langInstruction}
+- Use markdown formatting`;
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
@@ -136,7 +140,7 @@ Regras:
     return NextResponse.json(
       {
         error:
-          e instanceof Error ? e.message : "Erro ao gerar guia de facilitação",
+          e instanceof Error ? e.message : "Error generating facilitation guide",
       },
       { status: 500 }
     );
