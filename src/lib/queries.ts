@@ -8,7 +8,17 @@ export interface GameWithProfessors extends Game {
   professors: string[];
 }
 
-export async function getHospitalGames(): Promise<GameWithProfessors[]> {
+export async function getHospitalGames(userId?: number): Promise<GameWithProfessors[]> {
+  const params: unknown[] = [];
+  let userFilter = "";
+
+  if (userId !== undefined) {
+    userFilter = `AND gi.id IN (
+      SELECT a2.grupo_id FROM arbitro a2 WHERE a2.usuario_id = ?
+    )`;
+    params.push(userId);
+  }
+
   const rows = await query<Game & { jogo_nome: string; professor: string | null }>(
     `SELECT gi.id, gi.codigo, gi.codigo as nome, gi.ultimo_periodo_processado,
             gi.num_empresas, gi.jogo_id, j.nome as jogo_nome,
@@ -19,7 +29,9 @@ export async function getHospitalGames(): Promise<GameWithProfessors[]> {
      LEFT JOIN usuario u ON a.usuario_id = u.id
      WHERE gi.ultimo_periodo_processado > 0
        AND j.nome LIKE '%ospit%'
-     ORDER BY gi.id DESC`
+       ${userFilter}
+     ORDER BY gi.id DESC`,
+    params
   );
 
   // Deduplicate: group professors per game

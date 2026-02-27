@@ -1,6 +1,7 @@
 import { Header } from "@/components/header";
 import { getGameDetails } from "@/lib/data-provider";
-import { notFound } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { notFound, redirect } from "next/navigation";
 import { FacilitationPageContent } from "./facilitation-page-content";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,9 @@ interface PageProps {
 }
 
 export default async function FacilitationPage({ params, searchParams }: PageProps) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
   const { groupId } = await params;
   const { period: periodStr } = await searchParams;
   const gid = parseInt(groupId, 10);
@@ -21,7 +25,7 @@ export default async function FacilitationPage({ params, searchParams }: PagePro
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <Header />
+      <Header userName={session.nome} />
       <FacilitationPageContent
         groupId={groupId}
         gameCode={game.codigo}

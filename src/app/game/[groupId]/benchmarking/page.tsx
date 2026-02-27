@@ -1,6 +1,7 @@
 import { Header } from "@/components/header";
 import { getGameDetails, getBenchmarkingData } from "@/lib/data-provider";
-import { notFound } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { notFound, redirect } from "next/navigation";
 import { BenchmarkingContent } from "./benchmarking-content";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,9 @@ interface PageProps {
 }
 
 export default async function BenchmarkingPage({ params, searchParams }: PageProps) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
   const { groupId } = await params;
   const { period: periodStr } = await searchParams;
   const gid = parseInt(groupId, 10);
@@ -22,7 +26,7 @@ export default async function BenchmarkingPage({ params, searchParams }: PagePro
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <Header />
+      <Header userName={session.nome} />
       <BenchmarkingContent
         groupId={groupId}
         gameCode={game.codigo}

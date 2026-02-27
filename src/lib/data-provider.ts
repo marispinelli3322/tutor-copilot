@@ -22,7 +22,7 @@ const useMock = () => process.env.USE_MOCK === "true";
 
 export type { GameWithProfessors } from "./queries";
 
-export async function getHospitalGames() {
+export async function getHospitalGames(userId?: number) {
   if (useMock()) {
     const { MOCK_GAMES } = await import("./mock-data");
     return MOCK_GAMES.map((g) => ({
@@ -32,7 +32,7 @@ export async function getHospitalGames() {
     }));
   }
   const { getHospitalGames: dbGet } = await import("./queries");
-  return dbGet();
+  return dbGet(userId);
 }
 
 export async function getGameDetails(
