@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  try {
   const { email, senha } = await req.json();
 
   if (!email || !senha) {
@@ -100,4 +101,10 @@ export async function POST(req: NextRequest) {
     maxAge: 60 * 60 * 24 * 7,
   });
   return response;
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Erro interno", details: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
 }
