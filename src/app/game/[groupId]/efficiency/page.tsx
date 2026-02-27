@@ -1,8 +1,8 @@
 import { Header } from "@/components/header";
-import { getGameDetails, getTeamVariables, getHospitalData } from "@/lib/queries";
+import { getGameDetails, getEfficiencyData } from "@/lib/data-provider";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle, MinusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { EFFICIENCY_THRESHOLDS } from "@/lib/constants";
+import type { ServiceEfficiency } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -27,98 +27,43 @@ interface PageProps {
   searchParams: Promise<{ period?: string }>;
 }
 
-function getStatus(rate: number): {
-  label: string;
-  color: string;
-  icon: string;
-} {
-  if (rate >= EFFICIENCY_THRESHOLDS.optimal.min && rate <= EFFICIENCY_THRESHOLDS.optimal.max) {
-    return { label: "OK", color: "bg-green-100 text-green-800", icon: "+" };
+function getStatusBadge(row: ServiceEfficiency) {
+  if (row.status === "overload") {
+    return (
+      <Badge className="gap-1 bg-red-100 text-red-800">
+        <AlertTriangle className="h-3 w-3" />
+        Sobrecarga
+      </Badge>
+    );
   }
-  if (rate > EFFICIENCY_THRESHOLDS.high) {
-    return { label: "Sobrecarga", color: "bg-red-100 text-red-800", icon: "!" };
+  if (row.status === "overcapacity") {
+    return (
+      <Badge className="gap-1 bg-amber-100 text-amber-800">
+        <MinusCircle className="h-3 w-3" />
+        Ociosidade
+      </Badge>
+    );
   }
-  if (rate < EFFICIENCY_THRESHOLDS.low) {
-    return { label: "Ociosidade", color: "bg-amber-100 text-amber-800", icon: "-" };
-  }
-  return { label: "Atenção", color: "bg-yellow-100 text-yellow-800", icon: "~" };
+  return (
+    <Badge className="gap-1 bg-green-100 text-green-800">
+      <CheckCircle className="h-3 w-3" />
+      OK
+    </Badge>
+  );
 }
 
 function formatNumber(n: number): string {
   return new Intl.NumberFormat("pt-BR").format(Math.round(n));
 }
 
-function ServiceTable({
-  title,
-  data,
-}: {
-  title: string;
-  data: {
-    team: string;
-    capacity: number;
-    volume: number;
-    utilization: number;
-    unmetDemand: number;
-  }[];
-}) {
-  const sorted = [...data].sort((a, b) => b.utilization - a.utilization);
-
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-[#1A365D] py-3">
-        <CardTitle className="text-base text-white">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-[#F8FAFC]">
-              <TableHead className="font-semibold">Equipe</TableHead>
-              <TableHead className="text-right font-semibold">
-                Capacidade
-              </TableHead>
-              <TableHead className="text-right font-semibold">
-                Volume
-              </TableHead>
-              <TableHead className="text-right font-semibold">
-                Utilização
-              </TableHead>
-              <TableHead className="text-right font-semibold">
-                Demanda Perdida
-              </TableHead>
-              <TableHead className="text-center font-semibold">
-                Status
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sorted.map((row) => {
-              const status = getStatus(row.utilization);
-              return (
-                <TableRow key={row.team}>
-                  <TableCell className="font-medium">{row.team}</TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(row.capacity)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(row.volume)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {row.utilization.toFixed(1)}%
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatNumber(row.unmetDemand)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className={status.color}>{status.label}</Badge>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
+function formatCurrency(n: number): string {
+  if (Math.abs(n) >= 1_000_000) {
+    return `R$ ${(n / 1_000_000).toFixed(1)}M`;
+  }
+  if (Math.abs(n) >= 1_000) {
+    return `R$ ${(n / 1_000).toFixed(0)}k`;
+  }
+  return `R$ ${n.toFixed(0)}`;
 }
 
 export default async function EfficiencyPage({
@@ -135,26 +80,15 @@ export default async function EfficiencyPage({
     ? parseInt(periodStr, 10)
     : game.ultimo_periodo_processado;
 
-  // Fetch data from both tables to find the right columns
-  let variables: Record<string, unknown>[] = [];
-  let hospitalData: Record<string, unknown>[] = [];
-  let dataSource = "none";
+  const efficiency = await getEfficiencyData(gid, period);
+  const serviceKeys = ["emergency", "inpatient", "surgery"];
+  const hasData = serviceKeys.some((k) => efficiency[k]?.teams?.length > 0);
 
-  try {
-    variables = await getTeamVariables(gid, period);
-    hospitalData = await getHospitalData(gid, period);
-    dataSource = hospitalData.length > 0 ? "hospital" : "variables";
-  } catch {
-    // Will show error state
-  }
-
-  // Try to build efficiency data from whatever source we have
-  // We'll show raw column names if we can't map them yet
-  const hasData = variables.length > 0 || hospitalData.length > 0;
-
-  // Debug: show available columns to help map the data
-  const sampleRow = hospitalData[0] || variables[0];
-  const availableColumns = sampleRow ? Object.keys(sampleRow) : [];
+  // Period navigation
+  const periods = Array.from(
+    { length: game.ultimo_periodo_processado },
+    (_, i) => i + 1
+  );
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -168,7 +102,7 @@ export default async function EfficiencyPage({
           Voltar ao dashboard
         </Link>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight text-[#1A365D]">
               Eficiência Operacional
@@ -178,93 +112,134 @@ export default async function EfficiencyPage({
             </Badge>
           </div>
           <p className="mt-2 text-[#64748B]">
-            Análise de capacidade vs. demanda por linha de serviço — {game.codigo}
+            Capacidade vs. demanda por linha de serviço — {game.codigo}
           </p>
+        </div>
+
+        {/* Period selector */}
+        <div className="mb-8 flex items-center gap-2">
+          <span className="text-sm font-medium text-[#64748B]">Trimestre:</span>
+          <div className="flex gap-1">
+            {periods.map((p) => (
+              <Link
+                key={p}
+                href={`/game/${groupId}/efficiency?period=${p}`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  p === period
+                    ? "bg-[#1A365D] text-white"
+                    : "bg-white text-[#64748B] hover:bg-[#1A365D]/10 hover:text-[#1A365D]"
+                }`}
+              >
+                T{p}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {!hasData && (
           <Card className="border-amber-200 bg-amber-50">
             <CardContent className="pt-6">
               <p className="text-sm text-amber-800">
-                Nenhum dado encontrado para o Trimestre {period}. Verifique se
-                a simulação já foi processada e se a VPN está conectada.
+                Nenhum dado encontrado para o Trimestre {period}.
               </p>
             </CardContent>
           </Card>
         )}
 
         {hasData && (
-          <div className="space-y-6">
-            <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="pt-6">
-                <p className="text-sm text-blue-800">
-                  <strong>Mapeamento em progresso:</strong> Encontramos{" "}
-                  {hospitalData.length > 0
-                    ? `${hospitalData.length} registros na tabela hospital`
-                    : `${variables.length} registros em variavel_empresarial`}
-                  . Dados de {(variables[0] as Record<string, unknown>)?.team_name
-                    ? `${variables.length} equipes`
-                    : "equipes"} carregados do Trimestre {period}.
-                </p>
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-xs text-blue-600">
-                    Ver colunas disponíveis ({availableColumns.length})
-                  </summary>
-                  <pre className="mt-2 max-h-40 overflow-auto rounded bg-white p-2 text-xs">
-                    {availableColumns.join("\n")}
-                  </pre>
-                </details>
-              </CardContent>
-            </Card>
+          <div className="space-y-8">
+            {serviceKeys.map((key) => {
+              const report = efficiency[key];
+              if (!report || report.teams.length === 0) return null;
 
-            {/* Render tables if we can map the columns */}
-            {variables.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Dados das Equipes — Trimestre {period}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Equipe</TableHead>
-                        <TableHead className="text-right">
-                          Receita Líquida
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Resultado Op.
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {variables.map((v, i) => (
-                        <TableRow key={i}>
-                          <TableCell className="font-medium">
-                            {String(
-                              v.team_name || `Equipe ${v.team_number}`
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {v.receita_liquida
-                              ? formatNumber(Number(v.receita_liquida))
-                              : "—"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {v.resultado_operacional_liquido
-                              ? formatNumber(
-                                  Number(v.resultado_operacional_liquido)
-                                )
-                              : "—"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
+              const sorted = [...report.teams].sort(
+                (a, b) => b.utilizationRate - a.utilizationRate
+              );
+
+              return (
+                <div key={key}>
+                  <Card className="overflow-hidden">
+                    <CardHeader className="bg-[#1A365D] py-3">
+                      <CardTitle className="text-base text-white">
+                        {report.service}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="overflow-x-auto p-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-[#F8FAFC]">
+                            <TableHead className="font-semibold">
+                              Equipe
+                            </TableHead>
+                            <TableHead className="text-right font-semibold">
+                              Capacidade
+                            </TableHead>
+                            <TableHead className="text-right font-semibold">
+                              Atendidos
+                            </TableHead>
+                            <TableHead className="text-right font-semibold">
+                              Utilização
+                            </TableHead>
+                            <TableHead className="text-right font-semibold">
+                              Demanda Perdida
+                            </TableHead>
+                            <TableHead className="text-center font-semibold">
+                              Status
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {sorted.map((row) => (
+                            <TableRow key={row.teamNumber}>
+                              <TableCell className="font-medium">
+                                {row.team}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {formatNumber(row.capacity)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {formatNumber(row.volumeServed)}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold">
+                                {row.utilizationRate.toFixed(1)}%
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {row.unmetDemand > 0 ? (
+                                  <span className="font-semibold text-red-600">
+                                    {formatNumber(row.unmetDemand)}
+                                  </span>
+                                ) : (
+                                  <span className="text-green-600">0</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {getStatusBadge(row)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+
+                  {/* Takeaways */}
+                  {report.takeaways.length > 0 && (
+                    <div className="mt-3 rounded-lg border-l-4 border-[#C5A832] bg-[#C5A832]/5 p-4">
+                      <p className="mb-2 text-sm font-semibold text-[#8B7523]">
+                        Destaques
+                      </p>
+                      <ul className="space-y-1">
+                        {report.takeaways.map((t, i) => (
+                          <li key={i} className="text-sm text-[#1E293B]">
+                            • {t}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </main>

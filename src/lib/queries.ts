@@ -1,23 +1,16 @@
 import { query } from "./db";
 import type { Game, Team } from "./types";
 
+// ── Games ───────────────────────────────────────────────────
+
 export async function getActiveGames(): Promise<Game[]> {
   return query<Game>(
     `SELECT gi.id, gi.codigo, gi.codigo as nome, gi.ultimo_periodo_processado,
-            gi.num_empresas, gi.jogo_id
+            gi.num_empresas, gi.jogo_id, j.nome as jogo_nome
      FROM grupo_industrial gi
+     JOIN jogo j ON gi.jogo_id = j.id
      WHERE gi.ultimo_periodo_processado > 0
      ORDER BY gi.id DESC`
-  );
-}
-
-export async function getGameTeams(groupId: number): Promise<Team[]> {
-  return query<Team>(
-    `SELECT e.id, e.nome, e.numero, e.grupo_id
-     FROM empresa e
-     WHERE e.grupo_id = ?
-     ORDER BY e.numero`,
-    [groupId]
   );
 }
 
@@ -33,72 +26,124 @@ export async function getGameDetails(groupId: number) {
   return rows[0] || null;
 }
 
-export async function getTeamVariables(
+export async function getGameTeams(groupId: number): Promise<Team[]> {
+  return query<Team>(
+    `SELECT e.id, e.nome, e.numero, e.grupo_id
+     FROM empresa e
+     WHERE e.grupo_id = ?
+     ORDER BY e.numero`,
+    [groupId]
+  );
+}
+
+// ── EAV Data Access ─────────────────────────────────────────
+// variavel_empresarial is an EAV table: (empresa_id, periodo, codigo, valor)
+// We pivot specific codes into a record per team
+
+interface RawVariable {
+  empresa_id: number;
+  team_name: string;
+  team_number: number;
+  codigo: string;
+  valor: number;
+}
+
+/**
+ * Fetch specific variable codes for all teams in a group/period.
+ * Returns a map: teamNumber -> { codigo: valor, ... }
+ */
+export async function getTeamVariablesPivot(
   groupId: number,
-  period: number
-): Promise<Record<string, unknown>[]> {
-  return query(
-    `SELECT ve.*, e.nome as team_name, e.numero as team_number
+  period: number,
+  codes: string[]
+): Promise<Record<number, Record<string, number> & { team_name: string; team_number: number }>> {
+  if (codes.length === 0) return {};
+
+  const placeholders = codes.map(() => "?").join(",");
+  const rows = await query<RawVariable>(
+    `SELECT ve.empresa_id, e.nome as team_name, e.numero as team_number,
+            ve.codigo, ve.valor
      FROM variavel_empresarial ve
      JOIN empresa e ON ve.empresa_id = e.id
      WHERE e.grupo_id = ?
        AND ve.periodo = ?
-     ORDER BY e.numero`,
-    [groupId, period]
+       AND ve.codigo IN (${placeholders})
+     ORDER BY e.numero, ve.codigo`,
+    [groupId, period, ...codes]
   );
+
+  const result: Record<number, Record<string, number> & { team_name: string; team_number: number }> = {};
+  for (const row of rows) {
+    if (!result[row.team_number]) {
+      result[row.team_number] = {
+        team_name: row.team_name,
+        team_number: row.team_number,
+      } as Record<string, number> & { team_name: string; team_number: number };
+    }
+    (result[row.team_number] as Record<string, unknown>)[row.codigo] = Number(row.valor);
+  }
+  return result;
 }
 
-export async function getTeamDecisions(
-  groupId: number,
-  period: number
-): Promise<Record<string, unknown>[]> {
-  return query(
-    `SELECT d.id as decisao_id, d.empresa_id, d.periodo,
-            e.nome as team_name, e.numero as team_number,
-            id2.codigo, id2.valor, id2.tipo
-     FROM decisao d
-     JOIN empresa e ON d.empresa_id = e.id
-     JOIN item_decisao id2 ON id2.decisao_id = d.id
-     WHERE e.grupo_id = ?
-       AND d.periodo = ?
-     ORDER BY e.numero, id2.codigo`,
-    [groupId, period]
-  );
-}
+// ── Variable code groups ────────────────────────────────────
 
-export async function getHospitalData(
-  groupId: number,
-  period: number
-): Promise<Record<string, unknown>[]> {
-  return query(
-    `SELECT h.*, e.nome as team_name, e.numero as team_number
-     FROM hospital h
-     JOIN empresa e ON h.empresa_id = e.id
-     WHERE e.grupo_id = ?
-       AND h.periodo = ?
-     ORDER BY e.numero`,
-    [groupId, period]
-  );
-}
+export const EFFICIENCY_CODES = [
+  "atendimentos_prontoAtendimento",
+  "atendimentos_internacao",
+  "atendimentos_altaComplexidade",
+  "atendimentosPerdidosprontoAtendimento",
+  "atendimentosPerdidosinternacao",
+  "atendimentosPerdidosaltaComplexidade",
+  "demandaFinal_prontoAtendimento",
+  "demandaFinal_internacao",
+  "demandaFinal_altaComplexidade",
+  "limites_prontoAtendimento",
+  "limites_altaComplexidade",
+  "ociosidade_prontoAtendimento",
+  "ociosidade_altaComplexidade",
+] as const;
 
-export async function getVariableColumns(): Promise<string[]> {
-  const rows = await query<{ COLUMN_NAME: string }>(
-    `SELECT COLUMN_NAME
-     FROM information_schema.COLUMNS
-     WHERE TABLE_SCHEMA = 'simulationdb'
-       AND TABLE_NAME = 'variavel_empresarial'
-     ORDER BY ORDINAL_POSITION`
-  );
-  return rows.map((r) => r.COLUMN_NAME);
-}
+export const PROFITABILITY_CODES = [
+  "receita_total_prontoAtendimento",
+  "receita_total_internacao",
+  "receita_total_altaComplexidade",
+  "receita_liquida_prontoAtendimento",
+  "receita_liquida_internacao",
+  "receita_liquida_altaComplexidade",
+  "glosa_prontoAtendimento",
+  "glosa_internacao",
+  "glosa_altaComplexidade",
+  "inadimplenciaParticularesprontoAtendimento",
+  "inadimplenciaParticularesinternacao",
+  "inadimplenciaParticularesaltaComplexidade",
+  "custo_insumos_prontoAtendimento",
+  "custo_insumos_internacao",
+  "custo_insumos_altaComplexidade",
+  "custo_pessoal_prontoAtendimento",
+  "custo_pessoal_internacao",
+  "custo_pessoal_altaComplexidade",
+  "margem_contribuicao_prontoAtendimento",
+  "margem_contribuicao_internacao",
+  "margem_contribuicao_altaComplexidade",
+  "percentual_total_margem_contribuicao_prontoAtendimento",
+  "percentual_total_margem_contribuicao_internacao",
+  "percentual_total_margem_contribuicao_altaComplexidade",
+] as const;
 
-export async function getHospitalColumns(): Promise<string[]> {
-  const rows = await query<{ COLUMN_NAME: string }>(
-    `SELECT COLUMN_NAME
-     FROM information_schema.COLUMNS
-     WHERE TABLE_SCHEMA = 'simulationdb'
-       AND TABLE_NAME = 'hospital'
-     ORDER BY ORDINAL_POSITION`
-  );
-  return rows.map((r) => r.COLUMN_NAME);
-}
+export const BENCHMARKING_CODES = [
+  "valor_acao",
+  "receitaLiquidaTotal",
+  "resultadoOperacionalLiquido",
+  "resultadoOperacionalLiquidoAcumulado",
+  "vidasAtendidas",
+  "medicosCadastrados",
+  "capitalCirculanteLiq",
+  "patrimonioLiquido",
+  "colocacaoRankingPeriodo",
+  "numeroPontosPeriodo",
+  "saldoFinal",
+  "receitasOperacionais",
+  "despesasTotais",
+  "resultadoBruto",
+  "resultadoAntesDosImpostos",
+] as const;

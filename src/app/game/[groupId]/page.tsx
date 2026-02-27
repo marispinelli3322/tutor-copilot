@@ -1,5 +1,5 @@
 import { Header } from "@/components/header";
-import { getGameDetails, getGameTeams } from "@/lib/queries";
+import { getGameDetails, getGameTeams } from "@/lib/data-provider";
 import { MODULES } from "@/lib/constants";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -85,6 +85,14 @@ export default async function GameDashboard({ params }: PageProps) {
               </Badge>
             ))}
           </div>
+        </div>
+
+        {/* Period selector hint */}
+        <div className="mb-6 rounded-lg border border-[#C5A832]/30 bg-[#C5A832]/5 p-3">
+          <p className="text-sm text-[#8B7523]">
+            Analisando o <strong>Trimestre {game.ultimo_periodo_processado}</strong>.
+            Use o seletor de período dentro de cada módulo para navegar entre trimestres.
+          </p>
         </div>
 
         {/* Analysis modules */}
