@@ -2,11 +2,13 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [showSenha, setShowSenha] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -65,15 +67,28 @@ export function LoginForm() {
         >
           Senha
         </label>
-        <input
-          id="senha"
-          type="password"
-          required
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-[#1A365D] focus:outline-none focus:ring-1 focus:ring-[#1A365D]"
-          placeholder="Sua senha"
-        />
+        <div className="relative mt-1">
+          <input
+            id="senha"
+            type={showSenha ? "text" : "password"}
+            required
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-[#1A365D] focus:outline-none focus:ring-1 focus:ring-[#1A365D]"
+            placeholder="Sua senha"
+          />
+          <button
+            type="button"
+            onClick={() => setShowSenha(!showSenha)}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+          >
+            {showSenha ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
       </div>
 
       {error && (
