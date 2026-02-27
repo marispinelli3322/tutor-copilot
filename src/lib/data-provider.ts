@@ -20,18 +20,24 @@ const useMock = () => process.env.USE_MOCK === "true";
 
 // ── Games ───────────────────────────────────────────────────
 
-export async function getActiveGames(): Promise<(Game & { jogo_nome?: string })[]> {
+export type { GameWithProfessors } from "./queries";
+
+export async function getHospitalGames() {
   if (useMock()) {
     const { MOCK_GAMES } = await import("./mock-data");
-    return MOCK_GAMES;
+    return MOCK_GAMES.map((g) => ({
+      ...g,
+      jogo_nome: "Jogo de Hospitais",
+      professors: ["Professor Demo"],
+    }));
   }
-  const { getActiveGames: dbGet } = await import("./queries");
+  const { getHospitalGames: dbGet } = await import("./queries");
   return dbGet();
 }
 
 export async function getGameDetails(
   groupId: number
-): Promise<(Game & { jogo_nome: string }) | null> {
+): Promise<(Game & { jogo_nome: string; professor?: string | null }) | null> {
   if (useMock()) {
     const { MOCK_GAME_DETAILS } = await import("./mock-data");
     return MOCK_GAME_DETAILS[groupId] ?? null;

@@ -3,27 +3,65 @@ import type { Game, Team } from "./types";
 
 // ── Games ───────────────────────────────────────────────────
 
-export async function getActiveGames(): Promise<Game[]> {
-  return query<Game>(
+export interface GameWithProfessors extends Game {
+  jogo_nome: string;
+  professors: string[];
+}
+
+export async function getHospitalGames(): Promise<GameWithProfessors[]> {
+  const rows = await query<Game & { jogo_nome: string; professor: string | null }>(
     `SELECT gi.id, gi.codigo, gi.codigo as nome, gi.ultimo_periodo_processado,
-            gi.num_empresas, gi.jogo_id, j.nome as jogo_nome
+            gi.num_empresas, gi.jogo_id, j.nome as jogo_nome,
+            u.nome as professor
      FROM grupo_industrial gi
      JOIN jogo j ON gi.jogo_id = j.id
+     LEFT JOIN arbitro a ON a.grupo_id = gi.id
+     LEFT JOIN usuario u ON a.usuario_id = u.id
      WHERE gi.ultimo_periodo_processado > 0
+       AND j.nome LIKE '%ospit%'
      ORDER BY gi.id DESC`
   );
+
+  // Deduplicate: group professors per game
+  const map = new Map<number, GameWithProfessors>();
+  for (const row of rows) {
+    if (!map.has(row.id)) {
+      map.set(row.id, {
+        id: row.id,
+        codigo: row.codigo,
+        nome: row.nome,
+        ultimo_periodo_processado: row.ultimo_periodo_processado,
+        num_empresas: row.num_empresas,
+        jogo_id: row.jogo_id,
+        jogo_nome: row.jogo_nome,
+        professors: [],
+      });
+    }
+    if (row.professor && !map.get(row.id)!.professors.includes(row.professor)) {
+      map.get(row.id)!.professors.push(row.professor);
+    }
+  }
+  return Array.from(map.values());
 }
 
 export async function getGameDetails(groupId: number) {
-  const rows = await query<Game & { jogo_nome: string }>(
+  const rows = await query<Game & { jogo_nome: string; professor: string | null }>(
     `SELECT gi.id, gi.codigo, gi.codigo as nome, gi.ultimo_periodo_processado,
-            gi.num_empresas, gi.jogo_id, j.nome as jogo_nome
+            gi.num_empresas, gi.jogo_id, j.nome as jogo_nome,
+            GROUP_CONCAT(DISTINCT u.nome SEPARATOR ', ') as professor
      FROM grupo_industrial gi
      JOIN jogo j ON gi.jogo_id = j.id
-     WHERE gi.id = ?`,
+     LEFT JOIN arbitro a ON a.grupo_id = gi.id
+     LEFT JOIN usuario u ON a.usuario_id = u.id
+     WHERE gi.id = ?
+     GROUP BY gi.id`,
     [groupId]
   );
-  return rows[0] || null;
+  if (!rows[0]) return null;
+  return {
+    ...rows[0],
+    professor: rows[0].professor || null,
+  };
 }
 
 export async function getGameTeams(groupId: number): Promise<Team[]> {

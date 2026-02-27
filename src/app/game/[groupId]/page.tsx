@@ -18,6 +18,7 @@ import {
   MessageSquare,
   ArrowLeft,
   Users,
+  GraduationCap,
 } from "lucide-react";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -66,6 +67,12 @@ export default async function GameDashboard({ params }: PageProps) {
           <p className="mt-2 text-[#64748B]">
             {game.jogo_nome} — {teams.length} equipes competindo
           </p>
+          {(game as { professor?: string | null }).professor && (
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-[#8B7523]">
+              <GraduationCap className="h-4 w-4" />
+              {(game as { professor?: string | null }).professor}
+            </p>
+          )}
         </div>
 
         {/* Teams overview */}
