@@ -70,6 +70,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ rows });
     }
 
+    if (action === "sql" && searchParams.get("q")) {
+      const sql = searchParams.get("q")!;
+      if (!sql.trim().toUpperCase().startsWith("SELECT")) {
+        return NextResponse.json({ error: "Only SELECT allowed" }, { status: 400 });
+      }
+      const rows = await query(sql);
+      return NextResponse.json({ rows });
+    }
+
     return NextResponse.json({ error: "Ação inválida" }, { status: 400 });
   } catch (error) {
     return NextResponse.json(
