@@ -262,11 +262,12 @@ export async function getStrategyWeights(
   groupId: number
 ): Promise<Record<number, { team_name: string; team_number: number; weights: Record<number, { item_name: string; variable_code: string | null; peso: number }> }>> {
   const rows = await query<RawStrategyWeight>(
-    `SELECT pe.empresa_id, e.nome as team_name, e.numero as team_number,
-            pe.item_estrategia_id, ie.nome as item_name, ie.codigo_variavel as variable_code,
+    `SELECT es.empresa_id, e.nome as team_name, e.numero as team_number,
+            pe.item_estrategia_id, ie.nome as item_name, ie.codigo as variable_code,
             pe.peso
      FROM peso_item_estrategia pe
-     JOIN empresa e ON pe.empresa_id = e.id
+     JOIN estrategia es ON pe.estrategia_id = es.id
+     JOIN empresa e ON es.empresa_id = e.id
      JOIN item_estrategia ie ON pe.item_estrategia_id = ie.id
      WHERE e.grupo_id = ?
      ORDER BY e.numero, pe.item_estrategia_id`,
