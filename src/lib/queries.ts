@@ -242,6 +242,164 @@ export const GOVERNANCE_CODES = [
   "governancaCorporativa_atratividadeParcial_taxaInfeccao",
 ] as const;
 
+// ── M8: Pricing codes ────────────────────────────────────────
+
+export const PRICING_DECISION_CODES = [
+  "fdreceitapa",
+  "fdreceitaint",
+  "fdreceitaaltacomplexidade",
+  "boaSaude",
+  "goodShape",
+  "healthy",
+  "outras",
+  "particulares",
+  "tipTop",
+  "unique",
+] as const;
+
+export const PRICING_RESULT_CODES = [
+  "marketShareAtendimentosprontoAtendimento",
+  "marketShareAtendimentosinternacao",
+  "marketShareAtendimentosaltaComplexidade",
+  "medias_prontoAtendimento",
+  "medias_internacao",
+  "medias_altaComplexidade",
+  // Revenue by service×plan
+  "receita_servico_plano_prontoAtendimento_boaSaude",
+  "receita_servico_plano_prontoAtendimento_goodShape",
+  "receita_servico_plano_prontoAtendimento_healthy",
+  "receita_servico_plano_prontoAtendimento_outras",
+  "receita_servico_plano_prontoAtendimento_particulares",
+  "receita_servico_plano_prontoAtendimento_tipTop",
+  "receita_servico_plano_prontoAtendimento_unique",
+  "receita_servico_plano_internacao_boaSaude",
+  "receita_servico_plano_internacao_goodShape",
+  "receita_servico_plano_internacao_healthy",
+  "receita_servico_plano_internacao_outras",
+  "receita_servico_plano_internacao_particulares",
+  "receita_servico_plano_internacao_tipTop",
+  "receita_servico_plano_internacao_unique",
+  "receita_servico_plano_altaComplexidade_boaSaude",
+  "receita_servico_plano_altaComplexidade_goodShape",
+  "receita_servico_plano_altaComplexidade_healthy",
+  "receita_servico_plano_altaComplexidade_outras",
+  "receita_servico_plano_altaComplexidade_particulares",
+  "receita_servico_plano_altaComplexidade_tipTop",
+  "receita_servico_plano_altaComplexidade_unique",
+  // Attractiveness by service×plan
+  "atratividadeFinal_prontoAtendimento_boaSaude",
+  "atratividadeFinal_prontoAtendimento_goodShape",
+  "atratividadeFinal_prontoAtendimento_healthy",
+  "atratividadeFinal_prontoAtendimento_outras",
+  "atratividadeFinal_prontoAtendimento_particulares",
+  "atratividadeFinal_prontoAtendimento_tipTop",
+  "atratividadeFinal_prontoAtendimento_unique",
+  "atratividadeFinal_internacao_boaSaude",
+  "atratividadeFinal_internacao_goodShape",
+  "atratividadeFinal_internacao_healthy",
+  "atratividadeFinal_internacao_outras",
+  "atratividadeFinal_internacao_particulares",
+  "atratividadeFinal_internacao_tipTop",
+  "atratividadeFinal_internacao_unique",
+  "atratividadeFinal_altaComplexidade_boaSaude",
+  "atratividadeFinal_altaComplexidade_goodShape",
+  "atratividadeFinal_altaComplexidade_healthy",
+  "atratividadeFinal_altaComplexidade_outras",
+  "atratividadeFinal_altaComplexidade_particulares",
+  "atratividadeFinal_altaComplexidade_tipTop",
+  "atratividadeFinal_altaComplexidade_unique",
+] as const;
+
+// ── M10: Quality codes ──────────────────────────────────────
+
+export const QUALITY_CODES = [
+  "atratividadeParcial_taxaInfeccao",
+  "atratividadeParcial_atratividade_Infeccao",
+  "atratividadeParcial_certificacoesInternacionais",
+  "numeroCertificacoes",
+  "investimentosAcumuladosCertificacao",
+  "investimentosACumuladosControleInfeccao",
+  "investimentosAcumuladosLixo",
+  "alertaAnvisa",
+  "fiscalizacaoAnvisa",
+  "multaAnvisa",
+  "sucessoCertificacoes",
+  "fdinvestimentocertificaointernacional",
+  "fdinvestimentocontroleinfeccao",
+  "gastosEmTerceirizacaoDelixo",
+  "governancaCorporativa_atratividadeParcial_taxaInfeccao",
+] as const;
+
+// ── M11: Lost Revenue codes ─────────────────────────────────
+
+export const LOST_REVENUE_CODES = [
+  "ociosidade_prontoAtendimento",
+  "ociosidade_altaComplexidade",
+  "atendimentosPerdidosprontoAtendimento",
+  "atendimentosPerdidosinternacao",
+  "atendimentosPerdidosaltaComplexidade",
+  "receita_liquida_prontoAtendimento",
+  "receita_liquida_internacao",
+  "receita_liquida_altaComplexidade",
+  "atendimentos_prontoAtendimento",
+  "atendimentos_internacao",
+  "atendimentos_altaComplexidade",
+  "margem_contribuicao_prontoAtendimento",
+  "margem_contribuicao_internacao",
+  "margem_contribuicao_altaComplexidade",
+  "limites_prontoAtendimento",
+  "limites_altaComplexidade",
+  "demandaFinal_prontoAtendimento",
+  "demandaFinal_internacao",
+  "demandaFinal_altaComplexidade",
+] as const;
+
+// ── Team Decisions (item_decisao) ───────────────────────────
+
+interface RawDecision {
+  team_number: number;
+  team_name: string;
+  codigo: string;
+  valor: number;
+}
+
+/**
+ * Fetch decision codes from item_decisao for all teams in a group/period.
+ * Returns a map: teamNumber -> { codigo: valor, ... }
+ */
+export async function getTeamDecisions(
+  groupId: number,
+  period: number,
+  codes: string[]
+): Promise<Record<number, Record<string, number> & { team_name: string; team_number: number }>> {
+  if (codes.length === 0) return {};
+
+  const placeholders = codes.map(() => "?").join(",");
+  const rows = await query<RawDecision>(
+    `SELECT e.numero as team_number, e.nome as team_name, id.codigo, id.valor
+     FROM item_decisao id
+     JOIN decisao d ON id.decisao_id = d.id
+     JOIN empresa e ON d.empresa_id = e.id
+     WHERE e.grupo_id = ?
+       AND id.periodo = ?
+       AND id.codigo IN (${placeholders})
+     ORDER BY e.numero, id.codigo`,
+    [groupId, period, ...codes]
+  );
+
+  const result: Record<number, Record<string, number> & { team_name: string; team_number: number }> = {};
+  for (const row of rows) {
+    if (!result[row.team_number]) {
+      result[row.team_number] = {
+        team_name: row.team_name,
+        team_number: row.team_number,
+      } as Record<string, number> & { team_name: string; team_number: number };
+    }
+    (result[row.team_number] as Record<string, unknown>)[row.codigo] = Number(row.valor);
+  }
+  return result;
+}
+
 // ── Strategy Weights ────────────────────────────────────────
 
 interface RawStrategyWeight {

@@ -19,6 +19,10 @@ import type {
   FinancialRiskData,
   StrategyAlignmentData,
   StrategyItemAlignment,
+  PricingTeamData,
+  QualityData,
+  LostRevenueData,
+  LostRevenueServiceData,
 } from "./types";
 
 const useMock = () => process.env.USE_MOCK === "true";
@@ -545,4 +549,218 @@ export async function getStrategyAlignmentData(
   }
 
   return result.sort((a, b) => b.alignmentScore - a.alignmentScore);
+}
+
+// ── M8: Pricing ─────────────────────────────────────────────
+
+const CONVENIOS = ["boaSaude", "goodShape", "healthy", "outras", "particulares", "tipTop", "unique"] as const;
+const SERVICES_PRICING = [
+  { key: "PA", suffix: "prontoAtendimento" },
+  { key: "INT", suffix: "internacao" },
+  { key: "AC", suffix: "altaComplexidade" },
+] as const;
+
+export async function getPricingData(
+  groupId: number,
+  period: number
+): Promise<PricingTeamData[]> {
+  if (useMock()) return [];
+
+  const { getTeamVariablesPivot, getTeamDecisions, PRICING_RESULT_CODES, PRICING_DECISION_CODES } = await import("./queries");
+
+  const [decisions, results] = await Promise.all([
+    getTeamDecisions(groupId, period, [...PRICING_DECISION_CODES]),
+    getTeamVariablesPivot(groupId, period, [...PRICING_RESULT_CODES]),
+  ]);
+
+  const teamNums = new Set([
+    ...Object.keys(decisions).map(Number),
+    ...Object.keys(results).map(Number),
+  ]);
+  const sortedNums = Array.from(teamNums).sort();
+
+  const result: PricingTeamData[] = [];
+
+  for (const teamNum of sortedNums) {
+    const dec = decisions[teamNum] as Record<string, unknown> | undefined;
+    const res = results[teamNum] as Record<string, unknown> | undefined;
+    const teamName = (dec?.team_name || res?.team_name || `Equipe ${teamNum}`) as string;
+
+    const pricePA = Number(dec?.fdreceitapa || 0);
+    const priceINT = Number(dec?.fdreceitaint || 0);
+    const priceAC = Number(dec?.fdreceitaaltacomplexidade || 0);
+    const avgPrice = (pricePA + priceINT + priceAC) / 3;
+
+    const conveniosAceitos: Record<string, boolean> = {};
+    for (const c of CONVENIOS) {
+      conveniosAceitos[c] = Number(dec?.[c] || 0) === 1;
+    }
+
+    const revenueByConvenio: Record<string, number> = {};
+    const attractivenessByConvenio: Record<string, number> = {};
+    for (const c of CONVENIOS) {
+      let totalRev = 0;
+      let totalAttr = 0;
+      for (const svc of SERVICES_PRICING) {
+        totalRev += Number(res?.[`receita_servico_plano_${svc.suffix}_${c}`] || 0);
+        totalAttr += Number(res?.[`atratividadeFinal_${svc.suffix}_${c}`] || 0);
+      }
+      revenueByConvenio[c] = totalRev;
+      attractivenessByConvenio[c] = totalAttr / SERVICES_PRICING.length;
+    }
+
+    result.push({
+      team: teamName,
+      teamNumber: teamNum,
+      pricePA,
+      priceINT,
+      priceAC,
+      avgPrice,
+      marketSharePA: Number(res?.marketShareAtendimentosprontoAtendimento || 0),
+      marketShareINT: Number(res?.marketShareAtendimentosinternacao || 0),
+      marketShareAC: Number(res?.marketShareAtendimentosaltaComplexidade || 0),
+      mediaPA: Number(res?.medias_prontoAtendimento || 0),
+      mediaINT: Number(res?.medias_internacao || 0),
+      mediaAC: Number(res?.medias_altaComplexidade || 0),
+      conveniosAceitos,
+      revenueByConvenio,
+      attractivenessByConvenio,
+    });
+  }
+
+  return result;
+}
+
+// ── M10: Quality ────────────────────────────────────────────
+
+export async function getQualityData(
+  groupId: number,
+  period: number
+): Promise<QualityData[]> {
+  if (useMock()) return [];
+
+  const { getTeamVariablesPivot, QUALITY_CODES } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...QUALITY_CODES]);
+
+  const result: QualityData[] = [];
+
+  for (const teamNum of Object.keys(data).map(Number).sort()) {
+    const d = data[teamNum];
+    const vars = d as unknown as Record<string, number>;
+
+    const taxaInfeccao = vars.atratividadeParcial_taxaInfeccao || 0;
+    const certificacoes = vars.numeroCertificacoes || 0;
+    const multaAnvisa = vars.multaAnvisa || 0;
+    const alertaAnvisa = vars.alertaAnvisa || 0;
+
+    let qualityStatus: "excellent" | "adequate" | "critical" = "adequate";
+    if (multaAnvisa > 0 || alertaAnvisa > 2) {
+      qualityStatus = "critical";
+    } else if (certificacoes > 0 && multaAnvisa === 0) {
+      qualityStatus = "excellent";
+    }
+
+    result.push({
+      team: d.team_name,
+      teamNumber: d.team_number,
+      taxaInfeccao,
+      atratividadeInfeccao: vars.atratividadeParcial_atratividade_Infeccao || 0,
+      certificacoes,
+      atratividadeCertificacoes: vars.atratividadeParcial_certificacoesInternacionais || 0,
+      investAcumCertificacao: vars.investimentosAcumuladosCertificacao || 0,
+      investAcumInfeccao: vars.investimentosACumuladosControleInfeccao || 0,
+      investAcumLixo: vars.investimentosAcumuladosLixo || 0,
+      alertaAnvisa,
+      fiscalizacaoAnvisa: vars.fiscalizacaoAnvisa || 0,
+      multaAnvisa,
+      sucessoCertificacoes: vars.sucessoCertificacoes || 0,
+      investPeriodoCertificacao: vars.fdinvestimentocertificaointernacional || 0,
+      investPeriodoInfeccao: vars.fdinvestimentocontroleinfeccao || 0,
+      gastosLixo: vars.gastosEmTerceirizacaoDelixo || 0,
+      govTaxaInfeccao: vars.governancaCorporativa_atratividadeParcial_taxaInfeccao || 0,
+      qualityStatus,
+    });
+  }
+
+  return result;
+}
+
+// ── M11: Lost Revenue ───────────────────────────────────────
+
+export async function getLostRevenueData(
+  groupId: number,
+  period: number
+): Promise<LostRevenueData[]> {
+  if (useMock()) return [];
+
+  const { getTeamVariablesPivot, LOST_REVENUE_CODES } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...LOST_REVENUE_CODES]);
+
+  const services = [
+    { label: "Pronto Atendimento", suffix: "prontoAtendimento", hasIdleness: true },
+    { label: "Internação", suffix: "internacao", hasIdleness: false },
+    { label: "Alta Complexidade", suffix: "altaComplexidade", hasIdleness: true },
+  ];
+
+  const result: LostRevenueData[] = [];
+
+  for (const teamNum of Object.keys(data).map(Number).sort()) {
+    const d = data[teamNum];
+    const vars = d as unknown as Record<string, number>;
+
+    const svcData: LostRevenueServiceData[] = [];
+    let totalLost = 0;
+
+    for (const svc of services) {
+      const attended = vars[`atendimentos_${svc.suffix}`] || 0;
+      const netRevenue = vars[`receita_liquida_${svc.suffix}`] || 0;
+      const revenuePerUnit = attended > 0 ? netRevenue / attended : 0;
+      const lostVolume = vars[`atendimentosPerdidos${svc.suffix}`] || 0;
+      const lostRevenue = lostVolume * revenuePerUnit;
+
+      const idleness = svc.hasIdleness ? (vars[`ociosidade_${svc.suffix}`] || 0) : 0;
+      const margin = vars[`margem_contribuicao_${svc.suffix}`] || 0;
+      const marginPerUnit = attended > 0 ? margin / attended : 0;
+      const idlenessRevenue = idleness * marginPerUnit;
+
+      let dominantType: "overload" | "idleness" | "balanced" = "balanced";
+      if (lostRevenue > idlenessRevenue * 1.5) dominantType = "overload";
+      else if (idlenessRevenue > lostRevenue * 1.5) dominantType = "idleness";
+
+      svcData.push({
+        service: svc.label,
+        lostVolume,
+        revenuePerUnit,
+        lostRevenue,
+        idleness,
+        idlenessRevenue,
+        dominantType,
+      });
+
+      totalLost += lostRevenue + idlenessRevenue;
+    }
+
+    const totalNetRevenue = services.reduce(
+      (s, svc) => s + (vars[`receita_liquida_${svc.suffix}`] || 0),
+      0
+    );
+    const pctRevenueLost = totalNetRevenue > 0 ? (totalLost / totalNetRevenue) * 100 : 0;
+
+    const overloadTotal = svcData.reduce((s, sv) => s + sv.lostRevenue, 0);
+    const idlenessTotal = svcData.reduce((s, sv) => s + sv.idlenessRevenue, 0);
+    let dominantType: "overload" | "idleness" | "balanced" = "balanced";
+    if (overloadTotal > idlenessTotal * 1.5) dominantType = "overload";
+    else if (idlenessTotal > overloadTotal * 1.5) dominantType = "idleness";
+
+    result.push({
+      team: d.team_name,
+      teamNumber: d.team_number,
+      services: svcData,
+      totalLostRevenue: totalLost,
+      dominantType,
+      pctRevenueLost,
+    });
+  }
+
+  return result;
 }

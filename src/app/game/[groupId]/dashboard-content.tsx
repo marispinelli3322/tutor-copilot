@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, ArrowLeft, Users, GraduationCap } from "lucide-react";
+import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, ArrowLeft, Users, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/lib/use-locale";
 import type { Team } from "@/lib/types";
 
-const iconMap: Record<string, React.ElementType> = { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target };
+const iconMap: Record<string, React.ElementType> = { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign };
 
 interface Props {
   groupId: string;
@@ -33,6 +33,9 @@ export function DashboardContent({ groupId, game, teams }: Props) {
     { id: "governance", title: t.modGovernance, description: t.modGovernanceDesc, icon: "Shield", href: "governance" },
     { id: "financial-risk", title: t.modFinancialRisk, description: t.modFinancialRiskDesc, icon: "AlertTriangle", href: "financial-risk" },
     { id: "strategy", title: t.modStrategy, description: t.modStrategyDesc, icon: "Target", href: "strategy" },
+    { id: "pricing", title: t.modPricing, description: t.modPricingDesc, icon: "Tag", href: "pricing" },
+    { id: "quality", title: t.modQuality, description: t.modQualityDesc, icon: "HeartPulse", href: "quality" },
+    { id: "lost-revenue", title: t.modLostRevenue, description: t.modLostRevenueDesc, icon: "CircleDollarSign", href: "lost-revenue" },
   ];
 
   return (

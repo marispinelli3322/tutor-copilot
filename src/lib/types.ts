@@ -130,3 +130,64 @@ export interface StrategyAlignmentData {
   items: StrategyItemAlignment[];
   alignmentScore: number;
 }
+
+// M8: Pricing
+export interface PricingTeamData {
+  team: string;
+  teamNumber: number;
+  pricePA: number;
+  priceINT: number;
+  priceAC: number;
+  avgPrice: number;
+  marketSharePA: number;
+  marketShareINT: number;
+  marketShareAC: number;
+  mediaPA: number;
+  mediaINT: number;
+  mediaAC: number;
+  conveniosAceitos: Record<string, boolean>;
+  revenueByConvenio: Record<string, number>;
+  attractivenessByConvenio: Record<string, number>;
+}
+
+// M10: Quality
+export interface QualityData {
+  team: string;
+  teamNumber: number;
+  taxaInfeccao: number;
+  atratividadeInfeccao: number;
+  certificacoes: number;
+  atratividadeCertificacoes: number;
+  investAcumCertificacao: number;
+  investAcumInfeccao: number;
+  investAcumLixo: number;
+  alertaAnvisa: number;
+  fiscalizacaoAnvisa: number;
+  multaAnvisa: number;
+  sucessoCertificacoes: number;
+  investPeriodoCertificacao: number;
+  investPeriodoInfeccao: number;
+  gastosLixo: number;
+  govTaxaInfeccao: number;
+  qualityStatus: "excellent" | "adequate" | "critical";
+}
+
+// M11: Lost Revenue
+export interface LostRevenueServiceData {
+  service: string;
+  lostVolume: number;
+  revenuePerUnit: number;
+  lostRevenue: number;
+  idleness: number;
+  idlenessRevenue: number;
+  dominantType: "overload" | "idleness" | "balanced";
+}
+
+export interface LostRevenueData {
+  team: string;
+  teamNumber: number;
+  services: LostRevenueServiceData[];
+  totalLostRevenue: number;
+  dominantType: "overload" | "idleness" | "balanced";
+  pctRevenueLost: number;
+}
