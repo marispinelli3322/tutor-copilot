@@ -16,6 +16,9 @@ import type {
   BenchmarkData,
   TimeseriesDataset,
   GovernanceData,
+  FinancialRiskData,
+  StrategyAlignmentData,
+  StrategyItemAlignment,
 } from "./types";
 
 const useMock = () => process.env.USE_MOCK === "true";
@@ -373,4 +376,173 @@ export async function getGovernanceData(
   }
 
   return result.sort((a, b) => b.score - a.score);
+}
+
+// ── M6: Financial Risk ─────────────────────────────────────
+
+export async function getFinancialRiskData(
+  groupId: number,
+  period: number
+): Promise<FinancialRiskData[]> {
+  if (useMock()) {
+    return [];
+  }
+
+  const { getTeamVariablesPivot, FINANCIAL_RISK_CODES } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...FINANCIAL_RISK_CODES]);
+
+  const result: FinancialRiskData[] = [];
+
+  for (const teamNum of Object.keys(data).map(Number).sort()) {
+    const d = data[teamNum];
+    const vars = d as unknown as Record<string, number>;
+
+    const saldoFinal = vars.saldoFinal || 0;
+    const saldoInicialTrimestre = vars.saldoInicialTrimestre || 0;
+    const capitalCirculanteLiq = vars.capitalCirculanteLiq || 0;
+    const patrimonioLiquido = vars.patrimonioLiquido || 0;
+    const totalPassivo = vars.totalPassivo || 0;
+    const creditoRotativo = vars.creditoRotativo || 0;
+    const planoEmergencial = vars.planoEmergencial || 0;
+    const receitaLiquidaTotal = vars.receitaLiquidaTotal || 0;
+
+    const alavancagem = patrimonioLiquido !== 0 ? totalPassivo / patrimonioLiquido : 0;
+    const coberturaCaixa = receitaLiquidaTotal > 0 ? (saldoFinal / receitaLiquidaTotal) * 100 : 0;
+    const variacaoCaixa = saldoFinal - saldoInicialTrimestre;
+
+    let riskStatus: "healthy" | "attention" | "critical" = "healthy";
+    if (capitalCirculanteLiq < 0 || planoEmergencial > 0) {
+      riskStatus = "critical";
+    } else if (creditoRotativo > 0) {
+      riskStatus = "attention";
+    }
+
+    result.push({
+      team: d.team_name,
+      teamNumber: d.team_number,
+      saldoFinal,
+      saldoInicialTrimestre,
+      capitalCirculanteLiq,
+      patrimonioLiquido,
+      totalAtivo: vars.totalAtivo || 0,
+      totalPassivo,
+      creditoRotativo,
+      utilizacaoCreditoRotativo: vars.utilizacaoCreditoRotativo || 0,
+      taxaRotativo: vars.hospitalPercentualCreditoRotativo || 0,
+      despesaCreditoRotativo: vars.despesaCreditoRotativo || 0,
+      despesaEmprestimo: vars.despesa_emprestimo || 0,
+      taxaJurosEmprestimo: vars.taxa_juros_emprestimo || 0,
+      planoEmergencial,
+      receitaLiquidaTotal,
+      alavancagem,
+      coberturaCaixa,
+      variacaoCaixa,
+      riskStatus,
+    });
+  }
+
+  return result;
+}
+
+// ── M7: Strategy Alignment ─────────────────────────────────
+
+const STRATEGY_ITEMS = [
+  { name: "Preço da Ação", code: "valor_acao" },
+  { name: "Médicos Cadastrados", code: "medicosCadastrados" },
+  { name: "Receitas Op. Líquidas", code: "receitaLiquidaTotal" },
+  { name: "Resultado Op. Acumulado", code: "resultadoOperacionalLiquidoAcumulado" },
+  { name: "Capital Circulante Líq.", code: "capitalCirculanteLiq" },
+  { name: "Vidas Atendidas", code: "vidasAtendidas" },
+  { name: "Governança Corporativa", code: "governancaCorporativa" },
+];
+
+export async function getStrategyAlignmentData(
+  groupId: number,
+  period: number
+): Promise<StrategyAlignmentData[]> {
+  if (useMock()) {
+    return [];
+  }
+
+  const { getTeamVariablesPivot, STRATEGY_RESULT_CODES, getStrategyWeights } = await import("./queries");
+
+  // Fetch weights and results in parallel
+  const [weightsData, resultsData] = await Promise.all([
+    getStrategyWeights(groupId),
+    getTeamVariablesPivot(groupId, period, [...STRATEGY_RESULT_CODES]),
+  ]);
+
+  const teamNums = Object.keys(resultsData).map(Number).sort();
+  const totalTeams = teamNums.length;
+
+  // Compute rankings per variable code (higher = better, rank 1 = best)
+  const rankings: Record<string, Record<number, number>> = {};
+  for (const item of STRATEGY_ITEMS) {
+    const values = teamNums.map((tn) => ({
+      teamNum: tn,
+      value: ((resultsData[tn] as unknown as Record<string, number>)?.[item.code]) || 0,
+    }));
+    values.sort((a, b) => b.value - a.value);
+    rankings[item.code] = {};
+    values.forEach((v, i) => {
+      rankings[item.code][v.teamNum] = i + 1;
+    });
+  }
+
+  const result: StrategyAlignmentData[] = [];
+
+  for (const teamNum of teamNums) {
+    const teamWeights = weightsData[teamNum];
+    const teamResults = resultsData[teamNum];
+    const vars = teamResults as unknown as Record<string, number>;
+
+    const items: StrategyItemAlignment[] = [];
+    let alignedCount = 0;
+    let weightedCount = 0;
+
+    for (const item of STRATEGY_ITEMS) {
+      // Find weight from DB — match by variable_code or item_name
+      let weight = 0;
+      if (teamWeights) {
+        for (const w of Object.values(teamWeights.weights)) {
+          if (w.variable_code === item.code || w.item_name === item.name) {
+            weight = w.peso;
+            break;
+          }
+        }
+      }
+
+      const value = vars[item.code] || 0;
+      const ranking = rankings[item.code]?.[teamNum] || totalTeams;
+      const topHalf = ranking <= Math.ceil(totalTeams / 2);
+      const aligned = weight >= 2 ? topHalf : true; // low weight = not penalized
+
+      if (weight > 0) {
+        weightedCount++;
+        if (weight >= 2 && topHalf) alignedCount++;
+        else if (weight < 2) alignedCount++;
+      }
+
+      items.push({
+        itemName: item.name,
+        variableCode: item.code,
+        weight,
+        value,
+        ranking,
+        totalTeams,
+        aligned,
+      });
+    }
+
+    const alignmentScore = weightedCount > 0 ? (alignedCount / weightedCount) * 100 : 0;
+
+    result.push({
+      team: teamResults.team_name,
+      teamNumber: teamResults.team_number,
+      items,
+      alignmentScore,
+    });
+  }
+
+  return result.sort((a, b) => b.alignmentScore - a.alignmentScore);
 }

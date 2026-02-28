@@ -205,6 +205,33 @@ export const TIMESERIES_CODES = [
   "governancaCorporativa",
 ] as const;
 
+export const FINANCIAL_RISK_CODES = [
+  "saldoFinal",
+  "saldoInicialTrimestre",
+  "capitalCirculanteLiq",
+  "patrimonioLiquido",
+  "totalAtivo",
+  "totalPassivo",
+  "creditoRotativo",
+  "utilizacaoCreditoRotativo",
+  "hospitalPercentualCreditoRotativo",
+  "despesaCreditoRotativo",
+  "despesa_emprestimo",
+  "taxa_juros_emprestimo",
+  "planoEmergencial",
+  "receitaLiquidaTotal",
+] as const;
+
+export const STRATEGY_RESULT_CODES = [
+  "valor_acao",
+  "medicosCadastrados",
+  "receitaLiquidaTotal",
+  "resultadoOperacionalLiquidoAcumulado",
+  "capitalCirculanteLiq",
+  "vidasAtendidas",
+  "governancaCorporativa",
+] as const;
+
 export const GOVERNANCE_CODES = [
   "governancaCorporativa",
   "governancaCorporativa_creditoRotativo",
@@ -214,6 +241,55 @@ export const GOVERNANCE_CODES = [
   "governancaCorporativa_liberouRelatoriosFinanceirosHospitais",
   "governancaCorporativa_atratividadeParcial_taxaInfeccao",
 ] as const;
+
+// ── Strategy Weights ────────────────────────────────────────
+
+interface RawStrategyWeight {
+  empresa_id: number;
+  team_name: string;
+  team_number: number;
+  item_estrategia_id: number;
+  item_name: string;
+  variable_code: string | null;
+  peso: number;
+}
+
+/**
+ * Fetch strategy weights for all teams in a group.
+ * Joins peso_item_estrategia → item_estrategia → empresa.
+ */
+export async function getStrategyWeights(
+  groupId: number
+): Promise<Record<number, { team_name: string; team_number: number; weights: Record<number, { item_name: string; variable_code: string | null; peso: number }> }>> {
+  const rows = await query<RawStrategyWeight>(
+    `SELECT pe.empresa_id, e.nome as team_name, e.numero as team_number,
+            pe.item_estrategia_id, ie.nome as item_name, ie.codigo_variavel as variable_code,
+            pe.peso
+     FROM peso_item_estrategia pe
+     JOIN empresa e ON pe.empresa_id = e.id
+     JOIN item_estrategia ie ON pe.item_estrategia_id = ie.id
+     WHERE e.grupo_id = ?
+     ORDER BY e.numero, pe.item_estrategia_id`,
+    [groupId]
+  );
+
+  const result: Record<number, { team_name: string; team_number: number; weights: Record<number, { item_name: string; variable_code: string | null; peso: number }> }> = {};
+  for (const row of rows) {
+    if (!result[row.team_number]) {
+      result[row.team_number] = {
+        team_name: row.team_name,
+        team_number: row.team_number,
+        weights: {},
+      };
+    }
+    result[row.team_number].weights[row.item_estrategia_id] = {
+      item_name: row.item_name,
+      variable_code: row.variable_code,
+      peso: Number(row.peso),
+    };
+  }
+  return result;
+}
 
 /**
  * Fetch timeseries data: specific codes for ALL periods (1..maxPeriod).

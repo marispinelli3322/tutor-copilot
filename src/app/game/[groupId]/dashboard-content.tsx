@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, ArrowLeft, Users, GraduationCap } from "lucide-react";
+import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, ArrowLeft, Users, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/lib/use-locale";
 import type { Team } from "@/lib/types";
 
-const iconMap: Record<string, React.ElementType> = { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield };
+const iconMap: Record<string, React.ElementType> = { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target };
 
 interface Props {
   groupId: string;
@@ -31,6 +31,8 @@ export function DashboardContent({ groupId, game, teams }: Props) {
     { id: "facilitation", title: t.modFacilitation, description: t.modFacilitationDesc, icon: "MessageSquare", href: "facilitation" },
     { id: "timeseries", title: t.modTimeseries, description: t.modTimeseriesDesc, icon: "TrendingUp", href: "timeseries" },
     { id: "governance", title: t.modGovernance, description: t.modGovernanceDesc, icon: "Shield", href: "governance" },
+    { id: "financial-risk", title: t.modFinancialRisk, description: t.modFinancialRiskDesc, icon: "AlertTriangle", href: "financial-risk" },
+    { id: "strategy", title: t.modStrategy, description: t.modStrategyDesc, icon: "Target", href: "strategy" },
   ];
 
   return (

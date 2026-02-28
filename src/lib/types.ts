@@ -87,3 +87,46 @@ export interface GovernanceData {
   transparencia: number;
   taxaInfeccao: number;
 }
+
+// M6: Financial Risk
+export interface FinancialRiskData {
+  team: string;
+  teamNumber: number;
+  saldoFinal: number;
+  saldoInicialTrimestre: number;
+  capitalCirculanteLiq: number;
+  patrimonioLiquido: number;
+  totalAtivo: number;
+  totalPassivo: number;
+  creditoRotativo: number;
+  utilizacaoCreditoRotativo: number;
+  taxaRotativo: number;
+  despesaCreditoRotativo: number;
+  despesaEmprestimo: number;
+  taxaJurosEmprestimo: number;
+  planoEmergencial: number;
+  receitaLiquidaTotal: number;
+  // Computed KPIs
+  alavancagem: number;
+  coberturaCaixa: number;
+  variacaoCaixa: number;
+  riskStatus: "healthy" | "attention" | "critical";
+}
+
+// M7: Strategy Alignment
+export interface StrategyItemAlignment {
+  itemName: string;
+  variableCode: string;
+  weight: number;
+  value: number;
+  ranking: number;
+  totalTeams: number;
+  aligned: boolean;
+}
+
+export interface StrategyAlignmentData {
+  team: string;
+  teamNumber: number;
+  items: StrategyItemAlignment[];
+  alignmentScore: number;
+}
