@@ -125,6 +125,41 @@ const translations = {
 
     // Facilitation AI prompt language
     aiLanguage: "português brasileiro",
+
+    // M5: Time Series
+    modTimeseries: "Evolução Estratégica",
+    modTimeseriesDesc: "Evolução de Indicadores ao Longo do Tempo",
+    timeseriesTitle: "Evolução Estratégica",
+    timeseriesSubtitle: (code: string) => `Indicadores-chave ao longo dos trimestres — ${code}`,
+    totalPeriods: "trimestres",
+    sharePriceFull: "Valor da Ação",
+    operatingMarginLabel: "Margem Operacional (%)",
+    governanceScore: "Governança Corporativa",
+    biggestGain: "Maior alta",
+    biggestDrop: "Maior queda",
+    fromTo: "de",
+    to: "para",
+
+    // M9: Governance
+    modGovernance: "Governança Corporativa",
+    modGovernanceDesc: "Score de Governança e Componentes",
+    governanceTitle: "Governança Corporativa",
+    governanceSubtitle: (code: string) => `Score de governança e decomposição por componentes — ${code}`,
+    bestScore: "Melhor Score",
+    worstScore: "Pior Score",
+    averageScore: "Score Médio",
+    govScore: "Score",
+    govStatus: "Status",
+    govStrong: "Forte",
+    govMedium: "Média",
+    govCritical: "Crítica",
+    govCreditoRotativo: "Crédito Rotativo",
+    govDispensas: "Demissões",
+    govHorasExtras: "Horas Extras",
+    govCertificacoes: "Certificações",
+    govTransparencia: "Transparência",
+    govTaxaInfeccao: "Taxa de Infecção",
+    govComponents: "Componentes de Governança",
   },
   en: {
     appName: "Tutor Co-Pilot",
@@ -229,6 +264,41 @@ const translations = {
     regenerate: "Regenerate",
 
     aiLanguage: "English",
+
+    // M5: Time Series
+    modTimeseries: "Strategic Evolution",
+    modTimeseriesDesc: "Indicator Evolution Over Time",
+    timeseriesTitle: "Strategic Evolution",
+    timeseriesSubtitle: (code: string) => `Key indicators across quarters — ${code}`,
+    totalPeriods: "quarters",
+    sharePriceFull: "Share Price",
+    operatingMarginLabel: "Operating Margin (%)",
+    governanceScore: "Corporate Governance",
+    biggestGain: "Biggest gain",
+    biggestDrop: "Biggest drop",
+    fromTo: "from",
+    to: "to",
+
+    // M9: Governance
+    modGovernance: "Corporate Governance",
+    modGovernanceDesc: "Governance Score and Components",
+    governanceTitle: "Corporate Governance",
+    governanceSubtitle: (code: string) => `Governance score and component breakdown — ${code}`,
+    bestScore: "Best Score",
+    worstScore: "Worst Score",
+    averageScore: "Average Score",
+    govScore: "Score",
+    govStatus: "Status",
+    govStrong: "Strong",
+    govMedium: "Medium",
+    govCritical: "Critical",
+    govCreditoRotativo: "Revolving Credit",
+    govDispensas: "Layoffs",
+    govHorasExtras: "Overtime",
+    govCertificacoes: "Certifications",
+    govTransparencia: "Transparency",
+    govTaxaInfeccao: "Infection Rate",
+    govComponents: "Governance Components",
   },
 } as const;
 

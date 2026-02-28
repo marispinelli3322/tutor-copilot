@@ -14,6 +14,8 @@ import type {
   ServiceEfficiencyReport,
   ProfitabilityData,
   BenchmarkData,
+  TimeseriesDataset,
+  GovernanceData,
 } from "./types";
 
 const useMock = () => process.env.USE_MOCK === "true";
@@ -279,4 +281,96 @@ export async function getBenchmarkingData(
   }
 
   return result.sort((a, b) => a.overallRanking - b.overallRanking);
+}
+
+// ── M5: Time Series ────────────────────────────────────────
+
+export async function getTimeseriesData(
+  groupId: number,
+  maxPeriod: number
+): Promise<TimeseriesDataset> {
+  if (useMock()) {
+    return { teams: [], metrics: [] };
+  }
+
+  const { getTimeseriesAllPeriods, TIMESERIES_CODES } = await import("./queries");
+  const allData = await getTimeseriesAllPeriods(groupId, maxPeriod, [...TIMESERIES_CODES]);
+
+  // Collect team names from any period that has data
+  const teamMap = new Map<number, string>();
+  for (const periodData of Object.values(allData)) {
+    for (const teamNum of Object.keys(periodData).map(Number)) {
+      if (!teamMap.has(teamNum)) {
+        teamMap.set(teamNum, periodData[teamNum].team_name);
+      }
+    }
+  }
+  const sortedTeamNums = Array.from(teamMap.keys()).sort();
+  const teams = sortedTeamNums.map((n) => teamMap.get(n)!);
+
+  const metricDefs = [
+    { key: "sharePrice", label: "Valor da Ação", code: "valor_acao", computed: false },
+    { key: "netRevenue", label: "Receita Líquida", code: "receitaLiquidaTotal", computed: false },
+    { key: "operatingMargin", label: "Margem Operacional (%)", code: null, computed: true },
+    { key: "governance", label: "Governança Corporativa", code: "governancaCorporativa", computed: false },
+  ];
+
+  const metrics: TimeseriesDataset["metrics"] = metricDefs.map((m) => {
+    const data: { period: number; [teamName: string]: number }[] = [];
+    for (let p = 1; p <= maxPeriod; p++) {
+      const row: { period: number; [teamName: string]: number } = { period: p };
+      const periodData = allData[p] || {};
+      for (const teamNum of sortedTeamNums) {
+        const teamName = teamMap.get(teamNum)!;
+        const vars = periodData[teamNum] as Record<string, number> | undefined;
+        if (m.computed) {
+          // Operating margin = resultadoOperacionalLiquido / receitaLiquidaTotal * 100
+          const opResult = vars?.resultadoOperacionalLiquido || 0;
+          const revenue = vars?.receitaLiquidaTotal || 0;
+          row[teamName] = revenue > 0 ? (opResult / revenue) * 100 : 0;
+        } else {
+          row[teamName] = vars?.[m.code!] || 0;
+        }
+      }
+      data.push(row);
+    }
+    return { key: m.key, label: m.label, data };
+  });
+
+  return { teams, metrics };
+}
+
+// ── M9: Governance ─────────────────────────────────────────
+
+export async function getGovernanceData(
+  groupId: number,
+  period: number
+): Promise<GovernanceData[]> {
+  if (useMock()) {
+    return [];
+  }
+
+  const { getTeamVariablesPivot, GOVERNANCE_CODES } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...GOVERNANCE_CODES]);
+
+  const result: GovernanceData[] = [];
+
+  for (const teamNum of Object.keys(data).map(Number).sort()) {
+    const d = data[teamNum];
+    const vars = d as unknown as Record<string, number>;
+
+    result.push({
+      team: d.team_name,
+      teamNumber: d.team_number,
+      score: vars.governancaCorporativa || 0,
+      creditoRotativo: vars.governancaCorporativa_creditoRotativo || 0,
+      totalDispensa: vars.governancaCorporativa_totalDispensa || 0,
+      usoMaoObraExtra: vars.governancaCorporativa_usoMaoOBraExtra || 0,
+      numeroCertificacoes: vars.governancaCorporativa_numeroCertificacoes || 0,
+      transparencia: vars.governancaCorporativa_liberouRelatoriosFinanceirosHospitais || 0,
+      taxaInfeccao: vars.governancaCorporativa_atratividadeParcial_taxaInfeccao || 0,
+    });
+  }
+
+  return result.sort((a, b) => b.score - a.score);
 }

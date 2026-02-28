@@ -197,3 +197,61 @@ export const BENCHMARKING_CODES = [
   "resultadoBruto",
   "resultadoAntesDosImpostos",
 ] as const;
+
+export const TIMESERIES_CODES = [
+  "valor_acao",
+  "receitaLiquidaTotal",
+  "resultadoOperacionalLiquido",
+  "governancaCorporativa",
+] as const;
+
+export const GOVERNANCE_CODES = [
+  "governancaCorporativa",
+  "governancaCorporativa_creditoRotativo",
+  "governancaCorporativa_totalDispensa",
+  "governancaCorporativa_usoMaoOBraExtra",
+  "governancaCorporativa_numeroCertificacoes",
+  "governancaCorporativa_liberouRelatoriosFinanceirosHospitais",
+  "governancaCorporativa_atratividadeParcial_taxaInfeccao",
+] as const;
+
+/**
+ * Fetch timeseries data: specific codes for ALL periods (1..maxPeriod).
+ * Returns a map: period -> teamNumber -> { codigo: valor, ... }
+ */
+export async function getTimeseriesAllPeriods(
+  groupId: number,
+  maxPeriod: number,
+  codes: string[]
+): Promise<Record<number, Record<number, Record<string, number> & { team_name: string; team_number: number }>>> {
+  if (codes.length === 0 || maxPeriod < 1) return {};
+
+  const placeholders = codes.map(() => "?").join(",");
+  const periodPlaceholders = Array.from({ length: maxPeriod }, () => "?").join(",");
+  const periods = Array.from({ length: maxPeriod }, (_, i) => i + 1);
+
+  const rows = await query<RawVariable & { periodo: number }>(
+    `SELECT ve.empresa_id, e.nome as team_name, e.numero as team_number,
+            ve.codigo, ve.valor, ve.periodo
+     FROM variavel_empresarial ve
+     JOIN empresa e ON ve.empresa_id = e.id
+     WHERE e.grupo_id = ?
+       AND ve.periodo IN (${periodPlaceholders})
+       AND ve.codigo IN (${placeholders})
+     ORDER BY ve.periodo, e.numero, ve.codigo`,
+    [groupId, ...periods, ...codes]
+  );
+
+  const result: Record<number, Record<number, Record<string, number> & { team_name: string; team_number: number }>> = {};
+  for (const row of rows) {
+    if (!result[row.periodo]) result[row.periodo] = {};
+    if (!result[row.periodo][row.team_number]) {
+      result[row.periodo][row.team_number] = {
+        team_name: row.team_name,
+        team_number: row.team_number,
+      } as Record<string, number> & { team_name: string; team_number: number };
+    }
+    (result[row.periodo][row.team_number] as Record<string, unknown>)[row.codigo] = Number(row.valor);
+  }
+  return result;
+}

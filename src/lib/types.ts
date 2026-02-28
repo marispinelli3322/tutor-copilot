@@ -66,3 +66,24 @@ export interface AnalysisModule {
   description: string;
   icon: string;
 }
+
+export interface TimeseriesDataset {
+  teams: string[];
+  metrics: {
+    key: string;
+    label: string;
+    data: { period: number; [teamName: string]: number }[];
+  }[];
+}
+
+export interface GovernanceData {
+  team: string;
+  teamNumber: number;
+  score: number;
+  creditoRotativo: number;
+  totalDispensa: number;
+  usoMaoObraExtra: number;
+  numeroCertificacoes: number;
+  transparencia: number;
+  taxaInfeccao: number;
+}
