@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, ArrowLeft, Users, GraduationCap } from "lucide-react";
+import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen, ArrowLeft, Users, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/lib/use-locale";
 import type { Team } from "@/lib/types";
 
-const iconMap: Record<string, React.ElementType> = { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign };
+const iconMap: Record<string, React.ElementType> = { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen };
 
 interface Props {
   groupId: string;
@@ -25,10 +25,10 @@ export function DashboardContent({ groupId, game, teams }: Props) {
   const { t } = useLocale();
 
   const modules = [
+    // 10 análises determinísticas
     { id: "efficiency", title: t.modEfficiency, description: t.modEfficiencyDesc, icon: "Activity", href: "efficiency" },
     { id: "profitability", title: t.modProfitability, description: t.modProfitabilityDesc, icon: "DollarSign", href: "profitability" },
     { id: "benchmarking", title: t.modBenchmarking, description: t.modBenchmarkingDesc, icon: "BarChart3", href: "benchmarking" },
-    { id: "facilitation", title: t.modFacilitation, description: t.modFacilitationDesc, icon: "MessageSquare", href: "facilitation" },
     { id: "timeseries", title: t.modTimeseries, description: t.modTimeseriesDesc, icon: "TrendingUp", href: "timeseries" },
     { id: "governance", title: t.modGovernance, description: t.modGovernanceDesc, icon: "Shield", href: "governance" },
     { id: "financial-risk", title: t.modFinancialRisk, description: t.modFinancialRiskDesc, icon: "AlertTriangle", href: "financial-risk" },
@@ -36,6 +36,10 @@ export function DashboardContent({ groupId, game, teams }: Props) {
     { id: "pricing", title: t.modPricing, description: t.modPricingDesc, icon: "Tag", href: "pricing" },
     { id: "quality", title: t.modQuality, description: t.modQualityDesc, icon: "HeartPulse", href: "quality" },
     { id: "lost-revenue", title: t.modLostRevenue, description: t.modLostRevenueDesc, icon: "CircleDollarSign", href: "lost-revenue" },
+    // 11. Guia de Facilitação (IA)
+    { id: "facilitation", title: t.modFacilitation, description: t.modFacilitationDesc, icon: "MessageSquare", href: "facilitation" },
+    // 12. Glossário de Dados
+    { id: "data-glossary", title: t.modGlossary, description: t.modGlossaryDesc, icon: "BookOpen", href: "data-glossary" },
   ];
 
   return (

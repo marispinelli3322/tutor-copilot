@@ -270,6 +270,21 @@ const translations = {
     estimatedLoss: "Perda Estimada",
     idlenessUnits: "Ociosidade (un.)",
     pctNotCaptured: "% não capturada",
+
+    // M12: Data Glossary
+    modGlossary: "Glossário de Dados",
+    modGlossaryDesc: "Descrição e Origem de Todos os Indicadores",
+    glossaryTitle: "Glossário de Dados",
+    glossarySubtitle: (code: string) => `Descrição, fórmula e uso de cada indicador por módulo — ${code}`,
+    glossaryIndicator: "Indicador",
+    glossaryDescription: "Descrição",
+    glossaryFormula: "Como é Calculado",
+    glossaryUsage: "Para Quem Usar",
+    glossarySource: "Fonte",
+    glossarySourceDB: "Banco de Dados (variavel_empresarial)",
+    glossarySourceDecision: "Decisões das Equipes (item_decisao)",
+    glossarySourceComputed: "Calculado pelo Tutor Co-Pilot",
+    glossarySourceAI: "Gerado por IA (Claude)",
   },
   en: {
     appName: "Tutor Co-Pilot",
@@ -519,6 +534,21 @@ const translations = {
     estimatedLoss: "Estimated Loss",
     idlenessUnits: "Idleness (units)",
     pctNotCaptured: "% not captured",
+
+    // M12: Data Glossary
+    modGlossary: "Data Glossary",
+    modGlossaryDesc: "Description and Source of All Indicators",
+    glossaryTitle: "Data Glossary",
+    glossarySubtitle: (code: string) => `Description, formula and usage of each indicator by module — ${code}`,
+    glossaryIndicator: "Indicator",
+    glossaryDescription: "Description",
+    glossaryFormula: "How It's Calculated",
+    glossaryUsage: "Who Should Use",
+    glossarySource: "Source",
+    glossarySourceDB: "Database (variavel_empresarial)",
+    glossarySourceDecision: "Team Decisions (item_decisao)",
+    glossarySourceComputed: "Computed by Tutor Co-Pilot",
+    glossarySourceAI: "AI Generated (Claude)",
   },
 } as const;
 
