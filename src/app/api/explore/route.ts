@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
-import { query, getPool } from "@/lib/db";
+import { query } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  }
+  if (!session.isAdmin) {
+    return NextResponse.json({ error: "Acesso restrito a administradores" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const table = searchParams.get("table");
   const groupId = searchParams.get("groupId");
@@ -38,13 +47,19 @@ export async function GET(request: Request) {
     }
 
     if (action === "sample" && table) {
+      const sanitized = table.replace(/[^a-zA-Z0-9_]/g, "");
       const rows = await query(
-        `SELECT * FROM \`${table.replace(/[^a-zA-Z0-9_]/g, "")}\` LIMIT 3`
+        `SELECT * FROM \`${sanitized}\` LIMIT 3`
       );
       return NextResponse.json({ table, sample: rows });
     }
 
     if (action === "hospital-data" && groupId && period) {
+      const gid = parseInt(groupId, 10);
+      const p = parseInt(period, 10);
+      if (isNaN(gid) || isNaN(p) || gid <= 0 || p <= 0) {
+        return NextResponse.json({ error: "Parâmetros inválidos" }, { status: 400 });
+      }
       const rows = await query(
         `SELECT h.*, e.nome as team_name, e.numero as team_number
          FROM hospital h
@@ -52,12 +67,17 @@ export async function GET(request: Request) {
          WHERE e.grupo_id = ?
            AND h.periodo = ?
          ORDER BY e.numero`,
-        [groupId, period]
+        [gid, p]
       );
       return NextResponse.json({ rows });
     }
 
     if (action === "variables" && groupId && period) {
+      const gid = parseInt(groupId, 10);
+      const p = parseInt(period, 10);
+      if (isNaN(gid) || isNaN(p) || gid <= 0 || p <= 0) {
+        return NextResponse.json({ error: "Parâmetros inválidos" }, { status: 400 });
+      }
       const rows = await query(
         `SELECT ve.*, e.nome as team_name, e.numero as team_number
          FROM variavel_empresarial ve
@@ -65,27 +85,15 @@ export async function GET(request: Request) {
          WHERE e.grupo_id = ?
            AND ve.periodo = ?
          ORDER BY e.numero`,
-        [groupId, period]
+        [gid, p]
       );
       return NextResponse.json({ rows });
     }
 
-    if (action === "sql" && searchParams.get("q")) {
-      const sql = searchParams.get("q")!;
-      if (!sql.trim().toUpperCase().startsWith("SELECT")) {
-        return NextResponse.json({ error: "Only SELECT allowed" }, { status: 400 });
-      }
-      const rows = await query(sql);
-      return NextResponse.json({ rows });
-    }
-
     return NextResponse.json({ error: "Ação inválida" }, { status: 400 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      {
-        error: "Erro na consulta",
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { error: "Erro na consulta" },
       { status: 500 }
     );
   }
