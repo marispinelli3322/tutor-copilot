@@ -39,9 +39,9 @@ export function Header({ userName }: HeaderProps) {
           </Link>
           <Link
             href="/about"
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex items-center gap-1.5 rounded-md border border-[#C5A832]/40 bg-[#C5A832]/10 px-3 py-1.5 text-sm font-medium text-[#C5A832] transition-colors hover:border-[#C5A832] hover:bg-[#C5A832]/20"
           >
-            <FileText className="h-3.5 w-3.5" />
+            <FileText className="h-4 w-4" />
             {t.executiveSummary}
           </Link>
         </div>
