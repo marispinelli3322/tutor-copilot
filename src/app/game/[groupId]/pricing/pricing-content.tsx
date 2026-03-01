@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { PricingTeamData } from "@/lib/types";
 
 interface Props {
@@ -135,13 +136,13 @@ export function PricingContent({ groupId, gameCode, period, maxPeriod, pricingDa
                 <TableHeader>
                   <TableRow className="bg-[#F8FAFC]">
                     <TableHead className="font-semibold">{t.team}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.pricePA}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.priceINT}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.priceAC}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.avgPriceLabel}</TableHead>
-                    <TableHead className="text-right font-semibold">MS PA</TableHead>
-                    <TableHead className="text-right font-semibold">MS INT</TableHead>
-                    <TableHead className="text-right font-semibold">MS AC</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="pricing" entry={0}>{t.pricePA}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="pricing" entry={0}>{t.priceINT}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="pricing" entry={0}>{t.priceAC}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="pricing" entry={1}>{t.avgPriceLabel}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="pricing" entry={2}>MS PA</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="pricing" entry={2}>MS INT</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="pricing" entry={2}>MS AC</Tip></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

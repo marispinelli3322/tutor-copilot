@@ -7,7 +7,7 @@ Reads directly from the Simulation MySQL database and generates comparative anal
 ## Tech Stack
 - **Framework**: Next.js 14 (App Router)
 - **UI**: Tailwind CSS v4 + shadcn/ui + Recharts
-- **Database**: MySQL (simulationdb via VPN, read-only user `consulta`)
+- **Database**: MySQL (simulationdb, acesso direto via env vars DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD)
 - **AI**: Anthropic Claude API (for narrative generation in M4)
 - **Hosting**: Vercel
 - **Repo**: github.com/marispinelli3322/tutor-copilot
@@ -23,6 +23,14 @@ Reads directly from the Simulation MySQL database and generates comparative anal
 - **M2**: Diagnóstico de Lucratividade (margins by service line)
 - **M3**: Benchmarking Inter-Equipes (comparative ranking)
 - **M4**: Guia de Facilitação (AI-generated tutor questions)
+- **M5**: Evolução Estratégica (timeseries charts)
+- **M6**: Risco Financeiro (cash, leverage, revolving credit)
+- **M7**: Alinhamento Estratégico (weights vs results)
+- **M8**: Precificação Inteligente (prices, market share, convenios)
+- **M9**: Governança Corporativa (6-component score)
+- **M10**: Qualidade Assistencial (infection, certifications, ANVISA)
+- **M11**: Receita Perdida (overload vs idleness revenue loss)
+- **M12**: Glossário de Dados (indicator definitions, formulas, usage)
 
 ## Key Tables
 - `grupo_industrial` — game sessions
@@ -41,4 +49,4 @@ Reads directly from the Simulation MySQL database and generates comparative anal
 ## Commands
 - `npm run dev` — local dev server
 - `npm run build` — production build
-- Database requires VPN connection (OpenVPN with spinelli.ovpn)
+- Database: acesso direto (sem VPN), env vars configuradas no `.env.local` e Vercel

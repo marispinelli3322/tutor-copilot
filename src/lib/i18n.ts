@@ -271,6 +271,28 @@ const translations = {
     idlenessUnits: "Ociosidade (un.)",
     pctNotCaptured: "% não capturada",
 
+    // Dashboard layout
+    startHere: "Comece por aqui",
+    openGuide: "Abrir Guia",
+    facilitationHeroDesc: "Perguntas e insights gerados por IA para conduzir a discussão com as equipes neste trimestre.",
+    viewGlossary: "Ver Glossário de Indicadores",
+
+    // Resumo Executivo
+    executiveSummary: "Resumo Executivo",
+    aboutTitle: "Sobre o Tutor Co-Pilot",
+    aboutSubtitle: "Assistente inteligente para tutores de jogos de negócios hospitalares",
+    aboutWhatTitle: "O que é",
+    aboutWhatText: "O Tutor Co-Pilot é uma ferramenta de analytics projetada para tutores e professores do jogo de negócios Simulation Hospital. Ele lê diretamente o banco de dados do jogo e gera relatórios de análise comparativa entre as equipes, permitindo ao tutor conduzir sessões de facilitação com dados concretos.",
+    aboutHowTitle: "Como usar",
+    aboutHowStep1: "Selecione o jogo na página inicial",
+    aboutHowStep2: "Use o Guia de Facilitação (IA) como ponto de partida — ele gera perguntas personalizadas para cada trimestre",
+    aboutHowStep3: "Navegue pelos 10 módulos de análise para aprofundar temas específicos",
+    aboutHowStep4: "Consulte o Glossário de Dados para entender qualquer indicador",
+    aboutModulesTitle: "Módulos disponíveis",
+    aboutModulesText: "São 10 módulos de análise determinística (sem IA), 1 guia de facilitação com IA, e 1 glossário de dados. Cada módulo permite comparar todas as equipes lado a lado, com destaques automáticos para os pontos mais relevantes.",
+    aboutTipTitle: "Dica",
+    aboutTipText: "Passe o mouse sobre os nomes dos indicadores nas tabelas para ver uma explicação rápida com descrição, fórmula e para quem é útil.",
+
     // M12: Data Glossary
     modGlossary: "Glossário de Dados",
     modGlossaryDesc: "Descrição e Origem de Todos os Indicadores",
@@ -534,6 +556,28 @@ const translations = {
     estimatedLoss: "Estimated Loss",
     idlenessUnits: "Idleness (units)",
     pctNotCaptured: "% not captured",
+
+    // Dashboard layout
+    startHere: "Start here",
+    openGuide: "Open Guide",
+    facilitationHeroDesc: "AI-generated questions and insights to lead the discussion with teams this quarter.",
+    viewGlossary: "View Indicator Glossary",
+
+    // Executive Summary
+    executiveSummary: "Executive Summary",
+    aboutTitle: "About Tutor Co-Pilot",
+    aboutSubtitle: "Intelligent assistant for hospital business game tutors",
+    aboutWhatTitle: "What it is",
+    aboutWhatText: "Tutor Co-Pilot is an analytics tool designed for tutors and professors of the Simulation Hospital business game. It reads directly from the game database and generates comparative analysis reports between teams, enabling tutors to lead facilitation sessions with concrete data.",
+    aboutHowTitle: "How to use",
+    aboutHowStep1: "Select a game on the home page",
+    aboutHowStep2: "Use the Facilitation Guide (AI) as a starting point — it generates personalized questions for each quarter",
+    aboutHowStep3: "Navigate through the 10 analysis modules to dive deeper into specific topics",
+    aboutHowStep4: "Check the Data Glossary to understand any indicator",
+    aboutModulesTitle: "Available modules",
+    aboutModulesText: "There are 10 deterministic analysis modules (no AI), 1 AI-powered facilitation guide, and 1 data glossary. Each module allows you to compare all teams side by side, with automatic highlights for the most relevant points.",
+    aboutTipTitle: "Tip",
+    aboutTipText: "Hover over indicator names in the tables to see a quick explanation with description, formula, and who should use it.",
 
     // M12: Data Glossary
     modGlossary: "Data Glossary",

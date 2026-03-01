@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { BenchmarkData } from "@/lib/types";
 
 interface Props {
@@ -114,13 +115,13 @@ export function BenchmarkingContent({ groupId, gameCode, period, maxPeriod, benc
                   <TableRow className="bg-[#F8FAFC]">
                     <TableHead className="w-12 text-center font-semibold">#</TableHead>
                     <TableHead className="font-semibold">{t.team}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.sharePrice}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.netRevenue}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.opResult}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.opMargin}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.patientsAttended}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.doctors}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.nwc}</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="benchmarking" entry={0}>{t.sharePrice}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="benchmarking" entry={1}>{t.netRevenue}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="benchmarking" entry={2}>{t.opResult}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="benchmarking" entry={3}>{t.opMargin}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="benchmarking" entry={4}>{t.patientsAttended}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="benchmarking" entry={5}>{t.doctors}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="benchmarking" entry={6}>{t.nwc}</Tip></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

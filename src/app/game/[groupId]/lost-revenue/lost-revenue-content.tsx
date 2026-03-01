@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { LostRevenueData } from "@/lib/types";
 
 interface Props {
@@ -112,11 +113,11 @@ export function LostRevenueContent({ groupId, gameCode, period, maxPeriod, lostR
                 <TableHeader>
                   <TableRow className="bg-[#F8FAFC]">
                     <TableHead className="font-semibold">{t.team}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.lostByOverload}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.lostByIdleness}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.totalLost}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.pctNotCaptured}</TableHead>
-                    <TableHead className="text-center font-semibold">{t.dominantTypeLabel}</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="lost-revenue" entry={0}>{t.lostByOverload}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="lost-revenue" entry={1}>{t.lostByIdleness}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="lost-revenue" entry={2}>{t.totalLost}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="lost-revenue" entry={3}>{t.pctNotCaptured}</Tip></TableHead>
+                    <TableHead className="text-center font-semibold"><Tip module="lost-revenue" entry={4}>{t.dominantTypeLabel}</Tip></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

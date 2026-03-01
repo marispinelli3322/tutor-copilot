@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { ProfitabilityData } from "@/lib/types";
 
 interface Props {
@@ -96,14 +97,14 @@ export function ProfitabilityContent({ groupId, gameCode, period, maxPeriod, pro
                       <TableHeader>
                         <TableRow className="bg-[#F8FAFC]">
                           <TableHead className="font-semibold">{t.team}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.grossRevenue}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.disallowances}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.defaults}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.netRevenue}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.inputCosts}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.laborCosts}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.contributionMargin}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.marginPct}</TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="profitability" entry={0}>{t.grossRevenue}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="profitability" entry={1}>{t.disallowances}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="profitability" entry={2}>{t.defaults}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="profitability" entry={3}>{t.netRevenue}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="profitability" entry={4}>{t.inputCosts}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="profitability" entry={5}>{t.laborCosts}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="profitability" entry={6}>{t.contributionMargin}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="profitability" entry={7}>{t.marginPct}</Tip></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

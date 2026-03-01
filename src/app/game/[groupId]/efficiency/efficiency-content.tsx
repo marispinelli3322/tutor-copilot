@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { ServiceEfficiency, ServiceEfficiencyReport } from "@/lib/types";
 
 interface Props {
@@ -128,11 +129,11 @@ export function EfficiencyContent({ groupId, gameCode, period, maxPeriod, effici
                       <TableHeader>
                         <TableRow className="bg-[#F8FAFC]">
                           <TableHead className="font-semibold">{t.team}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.capacity}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.attended}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.utilization}</TableHead>
-                          <TableHead className="text-right font-semibold">{t.lostDemand}</TableHead>
-                          <TableHead className="text-center font-semibold">{t.status}</TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="efficiency" entry={0}>{t.capacity}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="efficiency" entry={1}>{t.attended}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="efficiency" entry={2}>{t.utilization}</Tip></TableHead>
+                          <TableHead className="text-right font-semibold"><Tip module="efficiency" entry={3}>{t.lostDemand}</Tip></TableHead>
+                          <TableHead className="text-center font-semibold"><Tip module="efficiency" entry={4}>{t.status}</Tip></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen, ArrowLeft, Users, GraduationCap } from "lucide-react";
+import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen, ArrowLeft, ArrowRight, Users, GraduationCap, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/lib/use-locale";
@@ -24,8 +24,7 @@ interface Props {
 export function DashboardContent({ groupId, game, teams }: Props) {
   const { t } = useLocale();
 
-  const modules = [
-    // 10 análises determinísticas
+  const analysisModules = [
     { id: "efficiency", title: t.modEfficiency, description: t.modEfficiencyDesc, icon: "Activity", href: "efficiency" },
     { id: "profitability", title: t.modProfitability, description: t.modProfitabilityDesc, icon: "DollarSign", href: "profitability" },
     { id: "benchmarking", title: t.modBenchmarking, description: t.modBenchmarkingDesc, icon: "BarChart3", href: "benchmarking" },
@@ -36,11 +35,9 @@ export function DashboardContent({ groupId, game, teams }: Props) {
     { id: "pricing", title: t.modPricing, description: t.modPricingDesc, icon: "Tag", href: "pricing" },
     { id: "quality", title: t.modQuality, description: t.modQualityDesc, icon: "HeartPulse", href: "quality" },
     { id: "lost-revenue", title: t.modLostRevenue, description: t.modLostRevenueDesc, icon: "CircleDollarSign", href: "lost-revenue" },
-    // 11. Guia de Facilitação (IA)
-    { id: "facilitation", title: t.modFacilitation, description: t.modFacilitationDesc, icon: "MessageSquare", href: "facilitation" },
-    // 12. Glossário de Dados
-    { id: "data-glossary", title: t.modGlossary, description: t.modGlossaryDesc, icon: "BookOpen", href: "data-glossary" },
   ];
+
+  const periodQuery = `?period=${game.ultimo_periodo_processado}`;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -79,21 +76,42 @@ export function DashboardContent({ groupId, game, teams }: Props) {
         </div>
       </div>
 
-      {/* Period selector hint */}
-      <div className="mb-6 rounded-lg border border-[#C5A832]/30 bg-[#C5A832]/5 p-3">
+      {/* Period hint */}
+      <div className="mb-8 rounded-lg border border-[#C5A832]/30 bg-[#C5A832]/5 p-3">
         <p className="text-sm text-[#8B7523]">
           <strong>{t.analyzingQuarter(game.ultimo_periodo_processado)}</strong>{" "}
           {t.periodHint}
         </p>
       </div>
 
-      {/* Analysis modules */}
+      {/* Hero: Guia de Facilitação */}
+      <div className="mb-10">
+        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#C5A832]">{t.startHere}</p>
+        <Link href={`/game/${groupId}/facilitation${periodQuery}`}>
+          <Card className="border-[#C5A832] bg-gradient-to-r from-[#1A365D] to-[#234681] transition-all hover:shadow-lg">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#C5A832]/20">
+                  <Sparkles className="h-7 w-7 text-[#C5A832]" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-xl text-white">{t.modFacilitation}</CardTitle>
+                  <CardDescription className="mt-1 text-white/70">{t.facilitationHeroDesc}</CardDescription>
+                </div>
+                <ArrowRight className="h-5 w-5 text-[#C5A832]" />
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Analysis modules grid */}
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[#64748B]">{t.analysisModules}</h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        {modules.map((mod) => {
+        {analysisModules.map((mod) => {
           const Icon = iconMap[mod.icon] || Activity;
           return (
-            <Link key={mod.id} href={`/game/${groupId}/${mod.href}?period=${game.ultimo_periodo_processado}`}>
+            <Link key={mod.id} href={`/game/${groupId}/${mod.href}${periodQuery}`}>
               <Card className="cursor-pointer transition-all hover:border-[#C5A832] hover:shadow-md">
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -110,6 +128,17 @@ export function DashboardContent({ groupId, game, teams }: Props) {
             </Link>
           );
         })}
+      </div>
+
+      {/* Glossary link — discrete */}
+      <div className="mt-8 text-center">
+        <Link
+          href={`/game/${groupId}/data-glossary${periodQuery}`}
+          className="inline-flex items-center gap-2 text-sm text-[#64748B] transition-colors hover:text-[#1A365D]"
+        >
+          <BookOpen className="h-4 w-4" />
+          {t.viewGlossary}
+        </Link>
       </div>
     </main>
   );

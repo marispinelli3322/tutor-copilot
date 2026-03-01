@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { GovernanceData } from "@/lib/types";
 
 interface Props {
@@ -122,7 +123,7 @@ export function GovernanceContent({ groupId, gameCode, period, maxPeriod, govDat
                 <TableHeader>
                   <TableRow className="bg-[#F8FAFC]">
                     <TableHead className="font-semibold">{t.team}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.govScore}</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="governance" entry={0}>{t.govScore}</Tip></TableHead>
                     <TableHead className="text-center font-semibold">{t.govStatus}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -149,12 +150,12 @@ export function GovernanceContent({ groupId, gameCode, period, maxPeriod, govDat
                 <TableHeader>
                   <TableRow className="bg-[#F8FAFC]">
                     <TableHead className="font-semibold">{t.team}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.govCreditoRotativo}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.govDispensas}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.govHorasExtras}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.govCertificacoes}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.govTransparencia}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.govTaxaInfeccao}</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="governance" entry={1}>{t.govCreditoRotativo}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="governance" entry={2}>{t.govDispensas}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="governance" entry={3}>{t.govHorasExtras}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="governance" entry={4}>{t.govCertificacoes}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="governance" entry={5}>{t.govTransparencia}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="governance" entry={6}>{t.govTaxaInfeccao}</Tip></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

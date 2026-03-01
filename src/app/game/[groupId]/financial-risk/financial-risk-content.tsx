@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { FinancialRiskData } from "@/lib/types";
 
 interface Props {
@@ -127,12 +128,12 @@ export function FinancialRiskContent({ groupId, gameCode, period, maxPeriod, ris
                 <TableHeader>
                   <TableRow className="bg-[#F8FAFC]">
                     <TableHead className="font-semibold">{t.team}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.cashBalance}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.nwc}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.leverage}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.revolvingCredit}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.cashCoverage}</TableHead>
-                    <TableHead className="text-center font-semibold">{t.riskStatusLabel}</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="financial-risk" entry={0}>{t.cashBalance}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="financial-risk" entry={1}>{t.nwc}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="financial-risk" entry={2}>{t.leverage}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="financial-risk" entry={3}>{t.revolvingCredit}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="financial-risk" entry={4}>{t.cashCoverage}</Tip></TableHead>
+                    <TableHead className="text-center font-semibold"><Tip module="financial-risk" entry={7}>{t.riskStatusLabel}</Tip></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -166,12 +167,12 @@ export function FinancialRiskContent({ groupId, gameCode, period, maxPeriod, ris
                 <TableHeader>
                   <TableRow className="bg-[#F8FAFC]">
                     <TableHead className="font-semibold">{t.team}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.cashVariation}</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="financial-risk" entry={5}>{t.cashVariation}</Tip></TableHead>
                     <TableHead className="text-right font-semibold">{t.utilizationPct}</TableHead>
                     <TableHead className="text-right font-semibold">{t.revolvingCost}</TableHead>
                     <TableHead className="text-right font-semibold">{t.loanInterest}</TableHead>
                     <TableHead className="text-right font-semibold">{t.loanRate}</TableHead>
-                    <TableHead className="text-center font-semibold">{t.emergencyPlan}</TableHead>
+                    <TableHead className="text-center font-semibold"><Tip module="financial-risk" entry={6}>{t.emergencyPlan}</Tip></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { StrategyAlignmentData } from "@/lib/types";
 
 interface Props {
@@ -118,7 +119,7 @@ export function StrategyContent({ groupId, gameCode, period, maxPeriod, strategy
                     {itemNames.map((name) => (
                       <TableHead key={name} className="text-center font-semibold text-xs">{name}</TableHead>
                     ))}
-                    <TableHead className="text-right font-semibold">{t.alignmentScore}</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="strategy" entry={4}>{t.alignmentScore}</Tip></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

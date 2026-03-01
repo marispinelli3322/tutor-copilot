@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLocale } from "@/lib/use-locale";
+import { Tip } from "@/components/indicator-tip";
 import type { QualityData } from "@/lib/types";
 
 interface Props {
@@ -127,12 +128,12 @@ export function QualityContent({ groupId, gameCode, period, maxPeriod, qualityDa
                 <TableHeader>
                   <TableRow className="bg-[#F8FAFC]">
                     <TableHead className="font-semibold">{t.team}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.infectionRate}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.certifications}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.anvisaAlerts}</TableHead>
-                    <TableHead className="text-right font-semibold">{t.anvisaFines}</TableHead>
-                    <TableHead className="text-center font-semibold">{t.anvisaInspection}</TableHead>
-                    <TableHead className="text-center font-semibold">{t.qualityStatus}</TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="quality" entry={0}>{t.infectionRate}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="quality" entry={1}>{t.certifications}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="quality" entry={2}>{t.anvisaAlerts}</Tip></TableHead>
+                    <TableHead className="text-right font-semibold"><Tip module="quality" entry={3}>{t.anvisaFines}</Tip></TableHead>
+                    <TableHead className="text-center font-semibold"><Tip module="quality" entry={4}>{t.anvisaInspection}</Tip></TableHead>
+                    <TableHead className="text-center font-semibold"><Tip module="quality" entry={7}>{t.qualityStatus}</Tip></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
