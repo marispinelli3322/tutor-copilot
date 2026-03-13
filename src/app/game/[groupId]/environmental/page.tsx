@@ -1,9 +1,9 @@
 import { Header } from "@/components/header";
-import { getGameDetails, getQualityData } from "@/lib/data-provider";
+import { getGameDetails, getEnvironmentalData } from "@/lib/data-provider";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
-import { QualityContent } from "./quality-content";
 import { detectGameType } from "@/lib/game-config";
+import { EnvironmentalContent } from "./environmental-content";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ interface PageProps {
   searchParams: Promise<{ period?: string }>;
 }
 
-export default async function QualityPage({ params, searchParams }: PageProps) {
+export default async function EnvironmentalPage({ params, searchParams }: PageProps) {
   const session = await getSession();
   if (!session) redirect("/login");
 
@@ -23,20 +23,20 @@ export default async function QualityPage({ params, searchParams }: PageProps) {
   if (!game) return notFound();
 
   const gameType = detectGameType(game.jogo_nome);
-  if (gameType !== "hospital") return notFound();
+  if (gameType !== "esg") return notFound();
 
   const period = periodStr ? parseInt(periodStr, 10) : game.ultimo_periodo_processado;
-  const qualityData = await getQualityData(gid, period, gameType);
+  const envData = await getEnvironmentalData(gid, period, gameType);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <Header userName={session.nome} />
-      <QualityContent
+      <EnvironmentalContent
         groupId={groupId}
         gameCode={game.codigo}
         period={period}
         maxPeriod={game.ultimo_periodo_processado}
-        qualityData={qualityData}
+        data={envData}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { Header } from "@/components/header";
-import { getHospitalGames } from "@/lib/data-provider";
+import { getGames } from "@/lib/data-provider";
 import { HomeContent } from "@/components/home-content";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -10,11 +10,11 @@ export default async function HomePage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  let games: Awaited<ReturnType<typeof getHospitalGames>> = [];
+  let games: Awaited<ReturnType<typeof getGames>> = [];
   let error: string | null = null;
 
   try {
-    games = await getHospitalGames(session.isAdmin ? undefined : session.userId);
+    games = await getGames(session.isAdmin ? undefined : session.userId);
   } catch (e) {
     error = e instanceof Error ? e.message : "Database connection error";
   }

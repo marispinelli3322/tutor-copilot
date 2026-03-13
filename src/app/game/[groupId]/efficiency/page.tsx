@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { getGameDetails, getEfficiencyData } from "@/lib/data-provider";
+import { detectGameType } from "@/lib/game-config";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { EfficiencyContent } from "./efficiency-content";
@@ -23,12 +24,13 @@ export default async function EfficiencyPage({
   const gid = parseInt(groupId, 10);
   const game = await getGameDetails(gid);
   if (!game) return notFound();
+  const gameType = detectGameType(game.jogo_nome);
 
   const period = periodStr
     ? parseInt(periodStr, 10)
     : game.ultimo_periodo_processado;
 
-  const efficiency = await getEfficiencyData(gid, period);
+  const efficiency = await getEfficiencyData(gid, period, gameType);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">

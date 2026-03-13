@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { getGameDetails, getTimeseriesData } from "@/lib/data-provider";
+import { detectGameType } from "@/lib/game-config";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { TimeseriesContent } from "./timeseries-content";
@@ -19,8 +20,9 @@ export default async function TimeseriesPage({ params }: PageProps) {
   const gid = parseInt(groupId, 10);
   const game = await getGameDetails(gid);
   if (!game) return notFound();
+  const gameType = detectGameType(game.jogo_nome);
 
-  const dataset = await getTimeseriesData(gid, game.ultimo_periodo_processado);
+  const dataset = await getTimeseriesData(gid, game.ultimo_periodo_processado, gameType);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">

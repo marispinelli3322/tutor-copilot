@@ -3,6 +3,7 @@ import { getGameDetails, getGameTeams } from "@/lib/data-provider";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { DashboardContent } from "./dashboard-content";
+import { detectGameType } from "@/lib/game-config";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +21,12 @@ export default async function GameDashboard({ params }: PageProps) {
   if (!game) return notFound();
 
   const teams = await getGameTeams(gid);
+  const gameType = detectGameType(game.jogo_nome);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <Header userName={session.nome} />
-      <DashboardContent groupId={groupId} game={game as any} teams={teams} />
+      <DashboardContent groupId={groupId} game={game as any} teams={teams} gameType={gameType} />
     </div>
   );
 }

@@ -18,6 +18,7 @@ const translations = {
     bySimulation: "by Simulation",
 
     // Home
+    allGames: "Jogos de Negócios",
     hospitalGames: "Jogos de Hospitais",
     selectGame: "Selecione um jogo para visualizar as análises do tutor.",
     connectionError: "Erro de conexão",
@@ -295,6 +296,47 @@ const translations = {
     aboutTipTitle: "Dica",
     aboutTipText: "Passe o mouse sobre os nomes dos indicadores nas tabelas para ver uma explicação rápida com descrição, fórmula e para quem é útil.",
 
+    // ESG-specific module names
+    modEsgEfficiency: "Eficiência Produtiva",
+    modEsgEfficiencyDesc: "Capacidade Fabril, Produção e Vendas Perdidas",
+    modEsgProfitabilityDesc: "Margens por Produto, DRE e EBITDA",
+    modEsgGovernance: "Governança ESG",
+    modEsgGovernanceDesc: "Score ESG e Componentes de Governança",
+    modEsgPricing: "Precificação e Produto",
+    modEsgPricingDesc: "Preços, Market Share e P&D por Produto",
+    modEnvironmental: "Gestão Ambiental",
+    modEnvironmentalDesc: "Pluma, SMS, Multas e Certificações ESG",
+    modInventory: "Estoque e Produção",
+    modInventoryDesc: "Estoque, Custos Unitários e Armazenagem",
+    modEsgLostRevenueDesc: "Receita Não Capturada por Vendas Perdidas",
+    govPluma: "Pluma",
+    govCertificacoesESG: "Certificações ESG",
+    govRelatorios: "Relatórios",
+    periodMonth: "Mês",
+
+    // Environmental module
+    environmentalTitle: "Gestão Ambiental",
+    environmentalSubtitle: (code: string) => `Indicadores ambientais e certificações ESG — ${code}`,
+    plumaLevel: "Nível de Pluma",
+    smsScore: "SMS Ambiental",
+    envFines: "Multas Ambientais",
+    remediation: "Remediação",
+    esgCertifications: "Certificações ESG",
+    wasteDisposal: "Descarte de Resíduos",
+    envExcellent: "Excelente",
+    envAdequate: "Adequado",
+    envCritical: "Crítico",
+
+    // Inventory module
+    inventoryTitle: "Estoque e Produção",
+    inventorySubtitle: (code: string) => `Estoque, custos unitários e armazenagem por produto — ${code}`,
+    stock: "Estoque",
+    unitCost: "Custo Unitário",
+    storageCost: "Custo Armazenagem",
+    production: "Produção",
+    productiveCapacity: "Capacidade Produtiva",
+    product: "Produto",
+
     // M12: Data Glossary
     modGlossary: "Glossário de Dados",
     modGlossaryDesc: "Descrição e Origem de Todos os Indicadores",
@@ -314,6 +356,7 @@ const translations = {
     appName: "Tutor Co-Pilot",
     bySimulation: "by Simulation",
 
+    allGames: "Business Games",
     hospitalGames: "Hospital Games",
     selectGame: "Select a game to view tutor analytics.",
     connectionError: "Connection error",
@@ -582,6 +625,47 @@ const translations = {
     aboutModulesText: "There are 10 deterministic analysis modules (no AI), 1 AI-powered facilitation guide, and 1 data glossary. Each module allows you to compare all teams side by side, with automatic highlights for the most relevant points.",
     aboutTipTitle: "Tip",
     aboutTipText: "Hover over indicator names in the tables to see a quick explanation with description, formula, and who should use it.",
+
+    // ESG-specific module names
+    modEsgEfficiency: "Production Efficiency",
+    modEsgEfficiencyDesc: "Factory Capacity, Production and Lost Sales",
+    modEsgProfitabilityDesc: "Margins by Product, P&L and EBITDA",
+    modEsgGovernance: "ESG Governance",
+    modEsgGovernanceDesc: "ESG Score and Governance Components",
+    modEsgPricing: "Pricing and Product",
+    modEsgPricingDesc: "Prices, Market Share and R&D by Product",
+    modEnvironmental: "Environmental Management",
+    modEnvironmentalDesc: "Plume, EHS, Fines and ESG Certifications",
+    modInventory: "Inventory and Production",
+    modInventoryDesc: "Stock, Unit Costs and Storage",
+    modEsgLostRevenueDesc: "Uncaptured Revenue from Lost Sales",
+    govPluma: "Plume",
+    govCertificacoesESG: "ESG Certifications",
+    govRelatorios: "Reports",
+    periodMonth: "Month",
+
+    // Environmental module
+    environmentalTitle: "Environmental Management",
+    environmentalSubtitle: (code: string) => `Environmental indicators and ESG certifications — ${code}`,
+    plumaLevel: "Plume Level",
+    smsScore: "EHS Score",
+    envFines: "Environmental Fines",
+    remediation: "Remediation",
+    esgCertifications: "ESG Certifications",
+    wasteDisposal: "Waste Disposal",
+    envExcellent: "Excellent",
+    envAdequate: "Adequate",
+    envCritical: "Critical",
+
+    // Inventory module
+    inventoryTitle: "Inventory and Production",
+    inventorySubtitle: (code: string) => `Stock, unit costs and storage by product — ${code}`,
+    stock: "Stock",
+    unitCost: "Unit Cost",
+    storageCost: "Storage Cost",
+    production: "Production",
+    productiveCapacity: "Productive Capacity",
+    product: "Product",
 
     // M12: Data Glossary
     modGlossary: "Data Glossary",

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Play, Search, GraduationCap, X } from "lucide-react";
 import type { GameWithProfessors } from "@/lib/queries";
 import { useLocale } from "@/lib/use-locale";
+import { detectGameType } from "@/lib/game-config";
 
 interface GameListProps {
   games: GameWithProfessors[];
@@ -158,12 +159,23 @@ export function GameList({ games }: GameListProps) {
                   <CardTitle className="text-lg text-[#1A365D]">
                     {game.codigo}
                   </CardTitle>
-                  <Badge
-                    variant="secondary"
-                    className="bg-[#1A365D]/10 text-[#1A365D]"
-                  >
-                    T{game.ultimo_periodo_processado}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge
+                      variant="secondary"
+                      className={detectGameType(game.jogo_nome) === "esg"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-[#1A365D]/10 text-[#1A365D]"
+                      }
+                    >
+                      {detectGameType(game.jogo_nome) === "esg" ? "ESG" : "Hospital"}
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-[#1A365D]/10 text-[#1A365D]"
+                    >
+                      {detectGameType(game.jogo_nome) === "esg" ? "M" : "T"}{game.ultimo_periodo_processado}
+                    </Badge>
+                  </div>
                 </div>
                 <CardDescription>{game.jogo_nome}</CardDescription>
               </CardHeader>

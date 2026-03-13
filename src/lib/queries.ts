@@ -9,14 +9,27 @@ export interface GameWithProfessors extends Game {
 }
 
 export async function getHospitalGames(userId?: number): Promise<GameWithProfessors[]> {
+  return getGames(userId);
+}
+
+export async function getGames(userId?: number, gameFilter?: string): Promise<GameWithProfessors[]> {
   const params: unknown[] = [];
   let userFilter = "";
+  let gameTypeFilter = "";
 
   if (userId !== undefined) {
     userFilter = `AND gi.id IN (
       SELECT a2.grupo_id FROM arbitro a2 WHERE a2.usuario_id = ?
     )`;
     params.push(userId);
+  }
+
+  if (gameFilter) {
+    gameTypeFilter = `AND j.nome LIKE ?`;
+    params.push(gameFilter);
+  } else {
+    // Show all supported game types
+    gameTypeFilter = `AND (j.nome LIKE '%ospit%' OR j.nome LIKE '%ESG%' OR j.nome LIKE '%neg%')`;
   }
 
   const rows = await query<Game & { jogo_nome: string; professor: string | null }>(
@@ -28,7 +41,7 @@ export async function getHospitalGames(userId?: number): Promise<GameWithProfess
      LEFT JOIN arbitro a ON a.grupo_id = gi.id
      LEFT JOIN usuario u ON a.usuario_id = u.id
      WHERE gi.ultimo_periodo_processado > 0
-       AND j.nome LIKE '%ospit%'
+       ${gameTypeFilter}
        ${userFilter}
      ORDER BY gi.id DESC`,
     params

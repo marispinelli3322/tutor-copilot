@@ -24,6 +24,7 @@ import type {
   LostRevenueData,
   LostRevenueServiceData,
 } from "./types";
+import { type GameType, detectGameType, getGameConfig } from "./game-config";
 
 const useMock = () => process.env.USE_MOCK === "true";
 
@@ -32,6 +33,10 @@ const useMock = () => process.env.USE_MOCK === "true";
 export type { GameWithProfessors } from "./queries";
 
 export async function getHospitalGames(userId?: number) {
+  return getGames(userId);
+}
+
+export async function getGames(userId?: number, gameFilter?: string) {
   if (useMock()) {
     const { MOCK_GAMES } = await import("./mock-data");
     return MOCK_GAMES.map((g) => ({
@@ -40,8 +45,8 @@ export async function getHospitalGames(userId?: number) {
       professors: ["Professor Demo"],
     }));
   }
-  const { getHospitalGames: dbGet } = await import("./queries");
-  return dbGet(userId);
+  const { getGames: dbGet } = await import("./queries");
+  return dbGet(userId, gameFilter);
 }
 
 export async function getGameDetails(
@@ -93,42 +98,26 @@ function computeEfficiency(
 
 export async function getEfficiencyData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<Record<string, ServiceEfficiencyReport>> {
   if (useMock()) {
     const { MOCK_EFFICIENCY } = await import("./mock-data");
     return MOCK_EFFICIENCY[period] ?? {};
   }
 
-  const { getTeamVariablesPivot, EFFICIENCY_CODES } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...EFFICIENCY_CODES]);
+  const config = getGameConfig(gameType);
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.efficiency]);
 
-  const services = [
-    {
-      key: "emergency",
-      label: "Pronto Atendimento",
-      attended: "atendimentos_prontoAtendimento",
-      demand: "demandaFinal_prontoAtendimento",
-      limit: "limites_prontoAtendimento",
-      lost: "atendimentosPerdidosprontoAtendimento",
-    },
-    {
-      key: "inpatient",
-      label: "Internação sem Cirurgia",
-      attended: "atendimentos_internacao",
-      demand: "demandaFinal_internacao",
-      limit: null, // internação doesn't have explicit limit in the data
-      lost: "atendimentosPerdidosinternacao",
-    },
-    {
-      key: "surgery",
-      label: "Cirurgia / Alta Complexidade",
-      attended: "atendimentos_altaComplexidade",
-      demand: "demandaFinal_altaComplexidade",
-      limit: "limites_altaComplexidade",
-      lost: "atendimentosPerdidosaltaComplexidade",
-    },
-  ];
+  const services = config.services.map((svc) => ({
+    key: svc.key,
+    label: svc.label,
+    attended: svc.attended!,
+    demand: svc.demand!,
+    limit: svc.limit,
+    lost: svc.lost!,
+  }));
 
   const result: Record<string, ServiceEfficiencyReport> = {};
 
@@ -194,21 +183,22 @@ export async function getEfficiencyData(
 
 export async function getProfitabilityData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<ProfitabilityData[]> {
   if (useMock()) {
     const { MOCK_PROFITABILITY } = await import("./mock-data");
     return MOCK_PROFITABILITY[period] ?? [];
   }
 
-  const { getTeamVariablesPivot, PROFITABILITY_CODES } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...PROFITABILITY_CODES]);
+  const config = getGameConfig(gameType);
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.profitability]);
 
-  const services = [
-    { label: "Pronto Atendimento", suffix: "prontoAtendimento" },
-    { label: "Internação sem Cirurgia", suffix: "internacao" },
-    { label: "Cirurgia / Alta Complexidade", suffix: "altaComplexidade" },
-  ];
+  const services = config.services.map((svc) => ({
+    label: svc.label,
+    suffix: svc.suffix,
+  }));
 
   const result: ProfitabilityData[] = [];
 
@@ -221,10 +211,10 @@ export async function getProfitabilityData(
       const disallowances = vars[`glosa_${svc.suffix}`] || 0;
       const defaults = vars[`inadimplenciaParticulares${svc.suffix}`] || 0;
       const netRevenue = vars[`receita_liquida_${svc.suffix}`] || 0;
-      const inputCosts = vars[`custo_insumos_${svc.suffix}`] || 0;
+      const inputCosts = vars[`custo_insumos_${svc.suffix}`] || vars[`custo_producao_${svc.suffix}`] || vars[`custo_materiaprima_${svc.suffix}`] || 0;
       const laborCosts = vars[`custo_pessoal_${svc.suffix}`] || 0;
       const contributionMargin = vars[`margem_contribuicao_${svc.suffix}`] || 0;
-      const marginPercent = vars[`percentual_total_margem_contribuicao_${svc.suffix}`] || 0;
+      const marginPercent = vars[`percentual_total_margem_contribuicao_${svc.suffix}`] || vars[`percentual_margem_contribuicao_${svc.suffix}`] || 0;
 
       result.push({
         team: d.team_name,
@@ -249,15 +239,17 @@ export async function getProfitabilityData(
 
 export async function getBenchmarkingData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<BenchmarkData[]> {
   if (useMock()) {
     const { MOCK_BENCHMARKING } = await import("./mock-data");
     return MOCK_BENCHMARKING[period] ?? [];
   }
 
-  const { getTeamVariablesPivot, BENCHMARKING_CODES } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...BENCHMARKING_CODES]);
+  const config = getGameConfig(gameType);
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.benchmarking]);
 
   const result: BenchmarkData[] = [];
 
@@ -294,14 +286,16 @@ export async function getBenchmarkingData(
 
 export async function getTimeseriesData(
   groupId: number,
-  maxPeriod: number
+  maxPeriod: number,
+  gameType: GameType = "hospital"
 ): Promise<TimeseriesDataset> {
   if (useMock()) {
     return { teams: [], metrics: [] };
   }
 
-  const { getTimeseriesAllPeriods, TIMESERIES_CODES } = await import("./queries");
-  const allData = await getTimeseriesAllPeriods(groupId, maxPeriod, [...TIMESERIES_CODES]);
+  const config = getGameConfig(gameType);
+  const { getTimeseriesAllPeriods } = await import("./queries");
+  const allData = await getTimeseriesAllPeriods(groupId, maxPeriod, [...config.codes.timeseries]);
 
   // Collect team names from any period that has data
   const teamMap = new Map<number, string>();
@@ -351,14 +345,16 @@ export async function getTimeseriesData(
 
 export async function getGovernanceData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<GovernanceData[]> {
   if (useMock()) {
     return [];
   }
 
-  const { getTeamVariablesPivot, GOVERNANCE_CODES } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...GOVERNANCE_CODES]);
+  const config = getGameConfig(gameType);
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.governance]);
 
   const result: GovernanceData[] = [];
 
@@ -366,17 +362,18 @@ export async function getGovernanceData(
     const d = data[teamNum];
     const vars = d as unknown as Record<string, number>;
 
-    result.push({
+    const govData: GovernanceData = {
       team: d.team_name,
       teamNumber: d.team_number,
       score: vars.governancaCorporativa || 0,
       creditoRotativo: vars.governancaCorporativa_creditoRotativo || 0,
-      totalDispensa: vars.governancaCorporativa_totalDispensa || 0,
-      usoMaoObraExtra: vars.governancaCorporativa_usoMaoOBraExtra || 0,
-      numeroCertificacoes: vars.governancaCorporativa_numeroCertificacoes || 0,
-      transparencia: vars.governancaCorporativa_liberouRelatoriosFinanceirosHospitais || 0,
-      taxaInfeccao: vars.governancaCorporativa_atratividadeParcial_taxaInfeccao || 0,
-    });
+      totalDispensa: vars.governancaCorporativa_totalDispensa || vars.governancaCorporativa_demissoes || 0,
+      usoMaoObraExtra: vars.governancaCorporativa_usoMaoOBraExtra || vars.governancaCorporativa_horaExtra || 0,
+      numeroCertificacoes: vars.governancaCorporativa_numeroCertificacoes || vars.governancaCorporativa_certificacoesESG || 0,
+      transparencia: vars.governancaCorporativa_liberouRelatoriosFinanceirosHospitais || vars.governancaCorporativa_relatorios || 0,
+      taxaInfeccao: vars.governancaCorporativa_atratividadeParcial_taxaInfeccao || vars.governancaCorporativa_pluma || 0,
+    };
+    result.push(govData);
   }
 
   return result.sort((a, b) => b.score - a.score);
@@ -386,14 +383,16 @@ export async function getGovernanceData(
 
 export async function getFinancialRiskData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<FinancialRiskData[]> {
   if (useMock()) {
     return [];
   }
 
-  const { getTeamVariablesPivot, FINANCIAL_RISK_CODES } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...FINANCIAL_RISK_CODES]);
+  const config = getGameConfig(gameType);
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.financialRisk]);
 
   const result: FinancialRiskData[] = [];
 
@@ -402,7 +401,7 @@ export async function getFinancialRiskData(
     const vars = d as unknown as Record<string, number>;
 
     const saldoFinal = vars.saldoFinal || 0;
-    const saldoInicialTrimestre = vars.saldoInicialTrimestre || 0;
+    const saldoInicialTrimestre = vars.saldoInicialTrimestre || vars.saldoInicialMes || 0;
     const capitalCirculanteLiq = vars.capitalCirculanteLiq || 0;
     const patrimonioLiquido = vars.patrimonioLiquido || 0;
     const totalPassivo = vars.totalPassivo || 0;
@@ -432,7 +431,7 @@ export async function getFinancialRiskData(
       totalPassivo,
       creditoRotativo,
       utilizacaoCreditoRotativo: vars.utilizacaoCreditoRotativo || 0,
-      taxaRotativo: vars.hospitalPercentualCreditoRotativo || 0,
+      taxaRotativo: vars.hospitalPercentualCreditoRotativo || vars.percentualCreditoRotativo || 0,
       despesaCreditoRotativo: vars.despesaCreditoRotativo || 0,
       despesaEmprestimo: vars.despesa_emprestimo || 0,
       taxaJurosEmprestimo: vars.taxa_juros_emprestimo || 0,
@@ -450,30 +449,23 @@ export async function getFinancialRiskData(
 
 // ── M7: Strategy Alignment ─────────────────────────────────
 
-const STRATEGY_ITEMS = [
-  { name: "Preço da Ação", code: "valor_acao" },
-  { name: "Médicos Cadastrados", code: "medicosCadastrados" },
-  { name: "Receitas Op. Líquidas", code: "receitaLiquidaTotal" },
-  { name: "Resultado Op. Acumulado", code: "resultadoOperacionalLiquidoAcumulado" },
-  { name: "Capital Circulante Líq.", code: "capitalCirculanteLiq" },
-  { name: "Vidas Atendidas", code: "vidasAtendidas" },
-  { name: "Governança Corporativa", code: "governancaCorporativa" },
-];
-
 export async function getStrategyAlignmentData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<StrategyAlignmentData[]> {
   if (useMock()) {
     return [];
   }
 
-  const { getTeamVariablesPivot, STRATEGY_RESULT_CODES, getStrategyWeights } = await import("./queries");
+  const config = getGameConfig(gameType);
+  const STRATEGY_ITEMS = config.strategyItems;
+  const { getTeamVariablesPivot, getStrategyWeights } = await import("./queries");
 
   // Fetch weights and results in parallel
   const [weightsData, resultsData] = await Promise.all([
     getStrategyWeights(groupId),
-    getTeamVariablesPivot(groupId, period, [...STRATEGY_RESULT_CODES]),
+    getTeamVariablesPivot(groupId, period, [...config.codes.strategyResults]),
   ]);
 
   const teamNums = Object.keys(resultsData).map(Number).sort();
@@ -553,24 +545,19 @@ export async function getStrategyAlignmentData(
 
 // ── M8: Pricing ─────────────────────────────────────────────
 
-const CONVENIOS = ["boaSaude", "goodShape", "healthy", "outras", "particulares", "tipTop", "unique"] as const;
-const SERVICES_PRICING = [
-  { key: "PA", suffix: "prontoAtendimento" },
-  { key: "INT", suffix: "internacao" },
-  { key: "AC", suffix: "altaComplexidade" },
-] as const;
-
 export async function getPricingData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<PricingTeamData[]> {
   if (useMock()) return [];
 
-  const { getTeamVariablesPivot, getTeamDecisions, PRICING_RESULT_CODES, PRICING_DECISION_CODES } = await import("./queries");
+  const config = getGameConfig(gameType);
+  const { getTeamVariablesPivot, getTeamDecisions } = await import("./queries");
 
   const [decisions, results] = await Promise.all([
-    getTeamDecisions(groupId, period, [...PRICING_DECISION_CODES]),
-    getTeamVariablesPivot(groupId, period, [...PRICING_RESULT_CODES]),
+    getTeamDecisions(groupId, period, [...config.codes.pricingDecisions]),
+    getTeamVariablesPivot(groupId, period, [...config.codes.pricingResults]),
   ]);
 
   const teamNums = new Set([
@@ -581,51 +568,87 @@ export async function getPricingData(
 
   const result: PricingTeamData[] = [];
 
-  for (const teamNum of sortedNums) {
-    const dec = decisions[teamNum] as Record<string, unknown> | undefined;
-    const res = results[teamNum] as Record<string, unknown> | undefined;
-    const teamName = (dec?.team_name || res?.team_name || `Equipe ${teamNum}`) as string;
+  if (gameType === "esg") {
+    // ESG: product-based pricing (P1=Shampoo, P2=Repelente, P3=Selante)
+    for (const teamNum of sortedNums) {
+      const dec = decisions[teamNum] as Record<string, unknown> | undefined;
+      const res = results[teamNum] as Record<string, unknown> | undefined;
+      const teamName = (dec?.team_name || res?.team_name || `Equipe ${teamNum}`) as string;
 
-    const pricePA = Number(dec?.fdreceitapa || 0);
-    const priceINT = Number(dec?.fdreceitaint || 0);
-    const priceAC = Number(dec?.fdreceitaaltacomplexidade || 0);
-    const avgPrice = (pricePA + priceINT + priceAC) / 3;
+      const pricePA = Number(dec?.fdPreco_p1 || 0);
+      const priceINT = Number(dec?.fdPreco_p2 || 0);
+      const priceAC = Number(dec?.fdPreco_p3 || 0);
+      const avgPrice = (pricePA + priceINT + priceAC) / 3;
 
-    const conveniosAceitos: Record<string, boolean> = {};
-    for (const c of CONVENIOS) {
-      conveniosAceitos[c] = Number(dec?.[c] || 0) === 1;
+      result.push({
+        team: teamName,
+        teamNumber: teamNum,
+        pricePA,
+        priceINT,
+        priceAC,
+        avgPrice,
+        marketSharePA: Number(res?.marketShare_p1 || 0),
+        marketShareINT: Number(res?.marketShare_p2 || 0),
+        marketShareAC: Number(res?.marketShare_p3 || 0),
+        mediaPA: Number(res?.medias_p1 || 0),
+        mediaINT: Number(res?.medias_p2 || 0),
+        mediaAC: Number(res?.medias_p3 || 0),
+        conveniosAceitos: {},
+        revenueByConvenio: {},
+        attractivenessByConvenio: {},
+      });
     }
+  } else {
+    // Hospital: convenio-based pricing
+    const CONVENIOS = config.convenios || [];
+    const SERVICES_PRICING = config.servicesPricing || [];
 
-    const revenueByConvenio: Record<string, number> = {};
-    const attractivenessByConvenio: Record<string, number> = {};
-    for (const c of CONVENIOS) {
-      let totalRev = 0;
-      let totalAttr = 0;
-      for (const svc of SERVICES_PRICING) {
-        totalRev += Number(res?.[`receita_servico_plano_${svc.suffix}_${c}`] || 0);
-        totalAttr += Number(res?.[`atratividadeFinal_${svc.suffix}_${c}`] || 0);
+    for (const teamNum of sortedNums) {
+      const dec = decisions[teamNum] as Record<string, unknown> | undefined;
+      const res = results[teamNum] as Record<string, unknown> | undefined;
+      const teamName = (dec?.team_name || res?.team_name || `Equipe ${teamNum}`) as string;
+
+      const pricePA = Number(dec?.fdreceitapa || 0);
+      const priceINT = Number(dec?.fdreceitaint || 0);
+      const priceAC = Number(dec?.fdreceitaaltacomplexidade || 0);
+      const avgPrice = (pricePA + priceINT + priceAC) / 3;
+
+      const conveniosAceitos: Record<string, boolean> = {};
+      for (const c of CONVENIOS) {
+        conveniosAceitos[c] = Number(dec?.[c] || 0) === 1;
       }
-      revenueByConvenio[c] = totalRev;
-      attractivenessByConvenio[c] = totalAttr / SERVICES_PRICING.length;
-    }
 
-    result.push({
-      team: teamName,
-      teamNumber: teamNum,
-      pricePA,
-      priceINT,
-      priceAC,
-      avgPrice,
-      marketSharePA: Number(res?.marketShareAtendimentosprontoAtendimento || 0),
-      marketShareINT: Number(res?.marketShareAtendimentosinternacao || 0),
-      marketShareAC: Number(res?.marketShareAtendimentosaltaComplexidade || 0),
-      mediaPA: Number(res?.medias_prontoAtendimento || 0),
-      mediaINT: Number(res?.medias_internacao || 0),
-      mediaAC: Number(res?.medias_altaComplexidade || 0),
-      conveniosAceitos,
-      revenueByConvenio,
-      attractivenessByConvenio,
-    });
+      const revenueByConvenio: Record<string, number> = {};
+      const attractivenessByConvenio: Record<string, number> = {};
+      for (const c of CONVENIOS) {
+        let totalRev = 0;
+        let totalAttr = 0;
+        for (const svc of SERVICES_PRICING) {
+          totalRev += Number(res?.[`receita_servico_plano_${svc.suffix}_${c}`] || 0);
+          totalAttr += Number(res?.[`atratividadeFinal_${svc.suffix}_${c}`] || 0);
+        }
+        revenueByConvenio[c] = totalRev;
+        attractivenessByConvenio[c] = totalAttr / SERVICES_PRICING.length;
+      }
+
+      result.push({
+        team: teamName,
+        teamNumber: teamNum,
+        pricePA,
+        priceINT,
+        priceAC,
+        avgPrice,
+        marketSharePA: Number(res?.marketShareAtendimentosprontoAtendimento || 0),
+        marketShareINT: Number(res?.marketShareAtendimentosinternacao || 0),
+        marketShareAC: Number(res?.marketShareAtendimentosaltaComplexidade || 0),
+        mediaPA: Number(res?.medias_prontoAtendimento || 0),
+        mediaINT: Number(res?.medias_internacao || 0),
+        mediaAC: Number(res?.medias_altaComplexidade || 0),
+        conveniosAceitos,
+        revenueByConvenio,
+        attractivenessByConvenio,
+      });
+    }
   }
 
   return result;
@@ -635,12 +658,17 @@ export async function getPricingData(
 
 export async function getQualityData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<QualityData[]> {
   if (useMock()) return [];
 
-  const { getTeamVariablesPivot, QUALITY_CODES } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...QUALITY_CODES]);
+  // ESG doesn't have quality module (replaced by environmental)
+  const config = getGameConfig(gameType);
+  if (config.codes.quality.length === 0) return [];
+
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.quality]);
 
   const result: QualityData[] = [];
 
@@ -689,18 +717,20 @@ export async function getQualityData(
 
 export async function getLostRevenueData(
   groupId: number,
-  period: number
+  period: number,
+  gameType: GameType = "hospital"
 ): Promise<LostRevenueData[]> {
   if (useMock()) return [];
 
-  const { getTeamVariablesPivot, LOST_REVENUE_CODES } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...LOST_REVENUE_CODES]);
+  const config = getGameConfig(gameType);
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.lostRevenue]);
 
-  const services = [
-    { label: "Pronto Atendimento", suffix: "prontoAtendimento", hasIdleness: true },
-    { label: "Internação", suffix: "internacao", hasIdleness: false },
-    { label: "Alta Complexidade", suffix: "altaComplexidade", hasIdleness: true },
-  ];
+  const services = config.services.map((svc) => ({
+    label: svc.label,
+    suffix: svc.suffix,
+    hasIdleness: svc.hasIdleness ?? true,
+  }));
 
   const result: LostRevenueData[] = [];
 
@@ -712,10 +742,10 @@ export async function getLostRevenueData(
     let totalLost = 0;
 
     for (const svc of services) {
-      const attended = vars[`atendimentos_${svc.suffix}`] || 0;
+      const attended = vars[`atendimentos_${svc.suffix}`] || vars[`lotesVendidos_${svc.suffix}`] || 0;
       const netRevenue = vars[`receita_liquida_${svc.suffix}`] || 0;
       const revenuePerUnit = attended > 0 ? netRevenue / attended : 0;
-      const lostVolume = vars[`atendimentosPerdidos${svc.suffix}`] || 0;
+      const lostVolume = vars[`atendimentosPerdidos${svc.suffix}`] || vars[`vendasPerdidas_${svc.suffix}`] || 0;
       const lostRevenue = lostVolume * revenuePerUnit;
 
       const idleness = svc.hasIdleness ? (vars[`ociosidade_${svc.suffix}`] || 0) : 0;
@@ -759,6 +789,137 @@ export async function getLostRevenueData(
       totalLostRevenue: totalLost,
       dominantType,
       pctRevenueLost,
+    });
+  }
+
+  return result;
+}
+
+// ── Environmental (ESG-only) ────────────────────────────────
+
+export interface EnvironmentalData {
+  team: string;
+  teamNumber: number;
+  pluma: number;
+  nivelPluma: number;
+  smsAmbiental: number;
+  multaAmbiental: number;
+  remediacao: number;
+  investimentoRemediacao: number;
+  certificacaoESG: number;
+  numeroCertificacoesESG: number;
+  investimentoCertificacaoESG: number;
+  investimentoAcumuladoCertificacaoESG: number;
+  gastoDescarte: number;
+  envStatus: "excellent" | "adequate" | "critical";
+}
+
+export async function getEnvironmentalData(
+  groupId: number,
+  period: number,
+  gameType: GameType = "esg"
+): Promise<EnvironmentalData[]> {
+  const config = getGameConfig(gameType);
+  if (!config.codes.environmental || config.codes.environmental.length === 0) return [];
+
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.environmental]);
+
+  const result: EnvironmentalData[] = [];
+
+  for (const teamNum of Object.keys(data).map(Number).sort()) {
+    const d = data[teamNum];
+    const vars = d as unknown as Record<string, number>;
+
+    const multaAmbiental = vars.multaAmbiental || 0;
+    const nivelPluma = vars.nivelPluma || 0;
+    const certificacaoESG = vars.certificacaoESG || 0;
+
+    let envStatus: "excellent" | "adequate" | "critical" = "adequate";
+    if (multaAmbiental > 0 || nivelPluma > 3) {
+      envStatus = "critical";
+    } else if (certificacaoESG > 0 && multaAmbiental === 0) {
+      envStatus = "excellent";
+    }
+
+    result.push({
+      team: d.team_name,
+      teamNumber: d.team_number,
+      pluma: vars.pluma || 0,
+      nivelPluma,
+      smsAmbiental: vars.smsAmbiental || 0,
+      multaAmbiental,
+      remediacao: vars.remediacao || 0,
+      investimentoRemediacao: vars.investimentoRemediacao || 0,
+      certificacaoESG,
+      numeroCertificacoesESG: vars.numeroCertificacoesESG || 0,
+      investimentoCertificacaoESG: vars.investimentoCertificacaoESG || 0,
+      investimentoAcumuladoCertificacaoESG: vars.investimentoAcumuladoCertificacaoESG || 0,
+      gastoDescarte: vars.gastoDescarte || 0,
+      envStatus,
+    });
+  }
+
+  return result;
+}
+
+// ── Inventory (ESG-only) ────────────────────────────────────
+
+export interface InventoryData {
+  team: string;
+  teamNumber: number;
+  products: {
+    name: string;
+    suffix: string;
+    estoque: number;
+    custoUnitario: number;
+    custoArmazenagem: number;
+    producao: number;
+    capacidadeProdutiva: number;
+    utilizacao: number;
+  }[];
+  totalEstoque: number;
+  totalArmazenagem: number;
+}
+
+export async function getInventoryData(
+  groupId: number,
+  period: number,
+  gameType: GameType = "esg"
+): Promise<InventoryData[]> {
+  const config = getGameConfig(gameType);
+  if (!config.codes.inventory || config.codes.inventory.length === 0) return [];
+
+  const { getTeamVariablesPivot } = await import("./queries");
+  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.inventory]);
+
+  const result: InventoryData[] = [];
+
+  for (const teamNum of Object.keys(data).map(Number).sort()) {
+    const d = data[teamNum];
+    const vars = d as unknown as Record<string, number>;
+
+    const products = config.products.map((prod) => {
+      const producao = vars[`producao_${prod.suffix}`] || 0;
+      const capacidade = vars[`capacidadeProdutiva_${prod.suffix}`] || 0;
+      return {
+        name: prod.name,
+        suffix: prod.suffix,
+        estoque: vars[`estoque_${prod.suffix}`] || 0,
+        custoUnitario: vars[`custoUnitario_${prod.suffix}`] || 0,
+        custoArmazenagem: vars[`custoArmazenagem_${prod.suffix}`] || 0,
+        producao,
+        capacidadeProdutiva: capacidade,
+        utilizacao: capacidade > 0 ? (producao / capacidade) * 100 : 0,
+      };
+    });
+
+    result.push({
+      team: d.team_name,
+      teamNumber: d.team_number,
+      products,
+      totalEstoque: products.reduce((s, p) => s + p.estoque, 0),
+      totalArmazenagem: products.reduce((s, p) => s + p.custoArmazenagem, 0),
     });
   }
 

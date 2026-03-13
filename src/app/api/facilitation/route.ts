@@ -9,6 +9,7 @@ import {
 } from "@/lib/data-provider";
 import { getTranslations } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
+import { detectGameType, getGameConfig } from "@/lib/game-config";
 
 export const maxDuration = 60;
 
@@ -29,18 +30,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [game, teams, efficiency, profitability, benchmarking] =
-      await Promise.all([
-        getGameDetails(groupId),
-        getGameTeams(groupId),
-        getEfficiencyData(groupId, period),
-        getProfitabilityData(groupId, period),
-        getBenchmarkingData(groupId, period),
-      ]);
-
+    const game = await getGameDetails(groupId);
     if (!game) {
       return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
+
+    const gameType = detectGameType(game.jogo_nome);
+    const config = getGameConfig(gameType);
+
+    const [teams, efficiency, profitability, benchmarking] =
+      await Promise.all([
+        getGameTeams(groupId),
+        getEfficiencyData(groupId, period, gameType),
+        getProfitabilityData(groupId, period, gameType),
+        getBenchmarkingData(groupId, period, gameType),
+      ]);
 
     const teamNames = teams.map((t) => t.nome || `Team ${t.numero}`).join(", ");
 
@@ -82,7 +86,11 @@ export async function GET(request: NextRequest) {
 
     const langInstruction = t.aiLanguage;
 
-    const prompt = `You are a specialist consultant in hospital business simulation games. Analyze the data below for Quarter ${period} of game "${game.codigo}" (${game.jogo_nome}) with ${teams.length} teams competing: ${teamNames}.
+    const gameDescription = gameType === "esg"
+      ? "ESG business simulation games (chemical industry with Shampoo, Repelente, Selante products)"
+      : "hospital business simulation games";
+
+    const prompt = `You are a specialist consultant in ${gameDescription}. Analyze the data below for ${config.periodLabel} ${period} of game "${game.codigo}" (${game.jogo_nome}) with ${teams.length} teams competing: ${teamNames}.
 
 ## OPERATIONAL EFFICIENCY DATA (Capacity vs Demand)
 
@@ -111,7 +119,7 @@ Based on this data, generate a Facilitation Guide for the tutor/professor who wi
 
 4. **DISCUSSION HIGHLIGHTS** (3-4 bullets): Specific team situations that deserve attention — bold decisions, evident mistakes, recoveries, or divergent strategies.
 
-5. **CLOSING QUESTION** (1 question): A reflective question to close the session, connecting learnings to real-world hospital management.
+5. **CLOSING QUESTION** (1 question): A reflective question to close the session, connecting learnings to real-world ${gameType === "esg" ? "industrial and ESG" : "hospital"} management.
 
 Rules:
 - Use professional but accessible language

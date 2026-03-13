@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { getGameDetails, getStrategyAlignmentData } from "@/lib/data-provider";
+import { detectGameType } from "@/lib/game-config";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { StrategyContent } from "./strategy-content";
@@ -20,9 +21,10 @@ export default async function StrategyPage({ params, searchParams }: PageProps) 
   const gid = parseInt(groupId, 10);
   const game = await getGameDetails(gid);
   if (!game) return notFound();
+  const gameType = detectGameType(game.jogo_nome);
 
   const period = periodStr ? parseInt(periodStr, 10) : game.ultimo_periodo_processado;
-  const strategyData = await getStrategyAlignmentData(gid, period);
+  const strategyData = await getStrategyAlignmentData(gid, period, gameType);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">

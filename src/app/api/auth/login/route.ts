@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
      JOIN grupo_industrial gi ON a.grupo_id = gi.id
      JOIN jogo j ON gi.jogo_id = j.id
      WHERE LOWER(u.email) = ?
-       AND j.nome LIKE '%ospit%'
+       AND (j.nome LIKE '%ospit%' OR j.nome LIKE '%ESG%' OR j.nome LIKE '%neg%')
      LIMIT 1`,
     [normalizedEmail]
   );

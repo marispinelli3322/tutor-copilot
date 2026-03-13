@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen, ArrowLeft, ArrowRight, Users, GraduationCap, Sparkles, MessagesSquare } from "lucide-react";
+import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen, ArrowLeft, ArrowRight, Users, GraduationCap, Sparkles, MessagesSquare, Leaf, Package } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/lib/use-locale";
 import type { Team } from "@/lib/types";
+import { type GameType, getGameConfig } from "@/lib/game-config";
 
-const iconMap: Record<string, React.ElementType> = { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen };
+const iconMap: Record<string, React.ElementType> = { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen, Leaf, Package };
 
 interface Props {
   groupId: string;
@@ -19,23 +20,20 @@ interface Props {
     professor?: string | null;
   };
   teams: Team[];
+  gameType: GameType;
 }
 
-export function DashboardContent({ groupId, game, teams }: Props) {
+export function DashboardContent({ groupId, game, teams, gameType }: Props) {
   const { t } = useLocale();
+  const config = getGameConfig(gameType);
 
-  const analysisModules = [
-    { id: "efficiency", title: t.modEfficiency, description: t.modEfficiencyDesc, icon: "Activity", href: "efficiency" },
-    { id: "profitability", title: t.modProfitability, description: t.modProfitabilityDesc, icon: "DollarSign", href: "profitability" },
-    { id: "benchmarking", title: t.modBenchmarking, description: t.modBenchmarkingDesc, icon: "BarChart3", href: "benchmarking" },
-    { id: "timeseries", title: t.modTimeseries, description: t.modTimeseriesDesc, icon: "TrendingUp", href: "timeseries" },
-    { id: "governance", title: t.modGovernance, description: t.modGovernanceDesc, icon: "Shield", href: "governance" },
-    { id: "financial-risk", title: t.modFinancialRisk, description: t.modFinancialRiskDesc, icon: "AlertTriangle", href: "financial-risk" },
-    { id: "strategy", title: t.modStrategy, description: t.modStrategyDesc, icon: "Target", href: "strategy" },
-    { id: "pricing", title: t.modPricing, description: t.modPricingDesc, icon: "Tag", href: "pricing" },
-    { id: "quality", title: t.modQuality, description: t.modQualityDesc, icon: "HeartPulse", href: "quality" },
-    { id: "lost-revenue", title: t.modLostRevenue, description: t.modLostRevenueDesc, icon: "CircleDollarSign", href: "lost-revenue" },
-  ];
+  const analysisModules = config.modules.map((mod) => ({
+    id: mod.id,
+    title: (t as Record<string, string>)[mod.titleKey] || mod.titleKey,
+    description: (t as Record<string, string>)[mod.descriptionKey] || mod.descriptionKey,
+    icon: mod.icon,
+    href: mod.href,
+  }));
 
   const periodQuery = `?period=${game.ultimo_periodo_processado}`;
 
@@ -50,7 +48,7 @@ export function DashboardContent({ groupId, game, teams }: Props) {
           <h1 className="text-3xl font-bold tracking-tight text-[#1A365D]">
             {game.codigo || `Game #${game.id}`}
           </h1>
-          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{t.quarter} {game.ultimo_periodo_processado}</Badge>
+          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{config.periodLabel} {game.ultimo_periodo_processado}</Badge>
         </div>
         <p className="mt-2 text-[#64748B]">
           {game.jogo_nome} — {teams.length} {t.teamsCompeting}

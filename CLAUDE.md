@@ -1,7 +1,8 @@
 # Tutor Co-Pilot — Simulation Business Game Analytics
 
 ## Project Overview
-AI-powered analytics dashboard for tutors/professors of the Simulation Hospital Business Game.
+AI-powered analytics dashboard for tutors/professors of Simulation Business Games.
+Supports **Hospital** and **ESG** (Negócios ESG) game types via the Game Config Pattern.
 Reads directly from the Simulation MySQL database and generates comparative analysis reports.
 
 ## Tech Stack
@@ -18,7 +19,13 @@ Reads directly from the Simulation MySQL database and generates comparative anal
 - AI only used for generating narrative insights and facilitation questions (M4)
 - All text in PT-BR
 
-## Modules
+## Architecture: Game Config Pattern
+- `src/lib/game-config.ts` — GameType, detectGameType(), getGameConfig()
+- `src/lib/game-configs/hospital.ts` — Hospital codes, modules, squad prompt
+- `src/lib/game-configs/esg.ts` — ESG codes, modules, squad prompt
+- GameType detected from `jogo.nome` (contains "ospit" → hospital, "ESG"/"neg" → esg)
+
+## Modules (Hospital)
 - **M1**: Eficiência Operacional (capacity vs demand per service)
 - **M2**: Diagnóstico de Lucratividade (margins by service line)
 - **M3**: Benchmarking Inter-Equipes (comparative ranking)
@@ -28,9 +35,16 @@ Reads directly from the Simulation MySQL database and generates comparative anal
 - **M7**: Alinhamento Estratégico (weights vs results)
 - **M8**: Precificação Inteligente (prices, market share, convenios)
 - **M9**: Governança Corporativa (6-component score)
-- **M10**: Qualidade Assistencial (infection, certifications, ANVISA)
+- **M10**: Qualidade Assistencial (infection, certifications, ANVISA) — Hospital only
 - **M11**: Receita Perdida (overload vs idleness revenue loss)
 - **M12**: Glossário de Dados (indicator definitions, formulas, usage)
+
+## Modules (ESG — additional/replacement)
+- **Eficiência Produtiva** replaces M1 (factory capacity, products: Shampoo/Repelente/Selante)
+- **Gestão Ambiental** replaces M10 (Pluma, SMS, environmental fines, ESG certifications)
+- **Estoque e Produção** (new: inventory, unit costs, storage per product)
+- **Precificação e Produto** replaces M8 (prices, market share, R&D per product)
+- **Governança ESG** replaces M9 (hora extra, demissões, Pluma, cert ESG, crédito rotativo, relatórios)
 
 ## Key Tables
 - `grupo_industrial` — game sessions

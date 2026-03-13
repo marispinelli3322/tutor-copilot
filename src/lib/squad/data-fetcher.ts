@@ -15,11 +15,18 @@ import {
   getPricingData,
   getQualityData,
   getLostRevenueData,
+  getEnvironmentalData,
 } from "@/lib/data-provider";
+import { type GameType, detectGameType, getGameConfig } from "@/lib/game-config";
 
-export async function fetchSquadData(groupId: number, period: number): Promise<string> {
+export async function fetchSquadData(groupId: number, period: number, gameType?: GameType): Promise<string> {
+  const game = await getGameDetails(groupId);
+  if (!game) return "Jogo não encontrado.";
+
+  const resolvedGameType = gameType || detectGameType(game.jogo_nome);
+  const config = getGameConfig(resolvedGameType);
+
   const [
-    game,
     teams,
     efficiency,
     profitability,
@@ -30,21 +37,20 @@ export async function fetchSquadData(groupId: number, period: number): Promise<s
     pricing,
     quality,
     lostRevenue,
+    environmental,
   ] = await Promise.all([
-    getGameDetails(groupId),
     getGameTeams(groupId),
-    getEfficiencyData(groupId, period),
-    getProfitabilityData(groupId, period),
-    getBenchmarkingData(groupId, period),
-    getGovernanceData(groupId, period),
-    getFinancialRiskData(groupId, period),
-    getStrategyAlignmentData(groupId, period),
-    getPricingData(groupId, period),
-    getQualityData(groupId, period),
-    getLostRevenueData(groupId, period),
+    getEfficiencyData(groupId, period, resolvedGameType),
+    getProfitabilityData(groupId, period, resolvedGameType),
+    getBenchmarkingData(groupId, period, resolvedGameType),
+    getGovernanceData(groupId, period, resolvedGameType),
+    getFinancialRiskData(groupId, period, resolvedGameType),
+    getStrategyAlignmentData(groupId, period, resolvedGameType),
+    getPricingData(groupId, period, resolvedGameType),
+    getQualityData(groupId, period, resolvedGameType),
+    getLostRevenueData(groupId, period, resolvedGameType),
+    resolvedGameType === "esg" ? getEnvironmentalData(groupId, period, resolvedGameType) : Promise.resolve([]),
   ]);
-
-  if (!game) return "Jogo não encontrado.";
 
   const teamNames = teams.map((t) => t.nome || `Equipe ${t.numero}`).join(", ");
 
@@ -53,7 +59,7 @@ export async function fetchSquadData(groupId: number, period: number): Promise<s
   // Game context
   sections.push(`## Contexto do Jogo
 - **Jogo**: ${game.codigo} (${game.jogo_nome})
-- **Trimestre**: ${period}
+- **${config.periodLabel}**: ${period}
 - **Professor**: ${game.professor || "N/A"}
 - **Equipes (${teams.length})**: ${teamNames}`);
 
@@ -166,6 +172,18 @@ ${rows.join("\n")}`);
     sections.push(`## Receita Perdida
 | Equipe | Total Perdido | % Receita | Tipo Dominante |
 |--------|-------------|----------|---------------|
+${rows.join("\n")}`);
+  }
+
+  // Environmental (ESG only)
+  if (environmental.length > 0) {
+    const rows = environmental.map(
+      (e) =>
+        `| ${e.team} | ${e.nivelPluma.toFixed(1)} | ${e.smsAmbiental.toFixed(1)} | ${e.multaAmbiental} | ${e.numeroCertificacoesESG} | ${e.envStatus} |`
+    );
+    sections.push(`## Gestão Ambiental
+| Equipe | Pluma | SMS | Multas | Cert. ESG | Status |
+|--------|-------|-----|--------|----------|--------|
 ${rows.join("\n")}`);
   }
 
