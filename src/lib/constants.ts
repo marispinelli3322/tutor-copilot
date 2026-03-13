@@ -1,4 +1,4 @@
-export const APP_NAME = "Tutor Co-Pilot";
+export const APP_NAME = "Tutor Copilot";
 export const APP_DESCRIPTION =
   "Assistente inteligente para tutores de jogos de negócios";
 

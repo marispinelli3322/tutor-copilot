@@ -30,7 +30,7 @@ export function Header({ userName }: HeaderProps) {
             </div>
             <div>
               <span className="text-lg font-bold tracking-tight text-white">
-                Tutor Co-Pilot
+                Tutor Copilot
               </span>
               <span className="ml-2 text-xs font-medium text-white/50">
                 by Simulation

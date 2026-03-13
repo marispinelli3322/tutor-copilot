@@ -14,7 +14,7 @@ export const LOCALE_FLAGS: Record<Locale, string> = {
 const translations = {
   pt: {
     // Header
-    appName: "Tutor Co-Pilot",
+    appName: "Tutor Copilot",
     bySimulation: "by Simulation",
 
     // Home
@@ -282,10 +282,10 @@ const translations = {
 
     // Resumo Executivo
     executiveSummary: "Resumo Executivo",
-    aboutTitle: "Sobre o Tutor Co-Pilot",
+    aboutTitle: "Sobre o Tutor Copilot",
     aboutSubtitle: "Assistente inteligente para tutores de jogos de negócios hospitalares",
     aboutWhatTitle: "O que é",
-    aboutWhatText: "O Tutor Co-Pilot é uma ferramenta de analytics projetada para tutores e professores do jogo de negócios Simulation Hospital. Ele lê diretamente o banco de dados do jogo e gera relatórios de análise comparativa entre as equipes, permitindo ao tutor conduzir sessões de facilitação com dados concretos.",
+    aboutWhatText: "O Tutor Copilot é uma ferramenta de analytics projetada para tutores e professores do jogo de negócios Simulation Hospital. Ele lê diretamente o banco de dados do jogo e gera relatórios de análise comparativa entre as equipes, permitindo ao tutor conduzir sessões de facilitação com dados concretos.",
     aboutHowTitle: "Como usar",
     aboutHowStep1: "Selecione o jogo na página inicial",
     aboutHowStep2: "Use o Guia de Facilitação (IA) como ponto de partida — ele gera perguntas personalizadas para cada trimestre",
@@ -349,11 +349,11 @@ const translations = {
     glossarySource: "Fonte",
     glossarySourceDB: "Banco de Dados (variavel_empresarial)",
     glossarySourceDecision: "Decisões das Equipes (item_decisao)",
-    glossarySourceComputed: "Calculado pelo Tutor Co-Pilot",
+    glossarySourceComputed: "Calculado pelo Tutor Copilot",
     glossarySourceAI: "Gerado por IA (Claude)",
   },
   en: {
-    appName: "Tutor Co-Pilot",
+    appName: "Tutor Copilot",
     bySimulation: "by Simulation",
 
     allGames: "Business Games",
@@ -612,10 +612,10 @@ const translations = {
 
     // Executive Summary
     executiveSummary: "Executive Summary",
-    aboutTitle: "About Tutor Co-Pilot",
+    aboutTitle: "About Tutor Copilot",
     aboutSubtitle: "Intelligent assistant for hospital business game tutors",
     aboutWhatTitle: "What it is",
-    aboutWhatText: "Tutor Co-Pilot is an analytics tool designed for tutors and professors of the Simulation Hospital business game. It reads directly from the game database and generates comparative analysis reports between teams, enabling tutors to lead facilitation sessions with concrete data.",
+    aboutWhatText: "Tutor Copilot is an analytics tool designed for tutors and professors of the Simulation Hospital business game. It reads directly from the game database and generates comparative analysis reports between teams, enabling tutors to lead facilitation sessions with concrete data.",
     aboutHowTitle: "How to use",
     aboutHowStep1: "Select a game on the home page",
     aboutHowStep2: "Use the Facilitation Guide (AI) as a starting point — it generates personalized questions for each quarter",
@@ -679,7 +679,7 @@ const translations = {
     glossarySource: "Source",
     glossarySourceDB: "Database (variavel_empresarial)",
     glossarySourceDecision: "Team Decisions (item_decisao)",
-    glossarySourceComputed: "Computed by Tutor Co-Pilot",
+    glossarySourceComputed: "Computed by Tutor Copilot",
     glossarySourceAI: "AI Generated (Claude)",
   },
 } as const;

@@ -13,7 +13,7 @@ export default function LoginPage() {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-[#1A365D]">
-              Tutor Co-Pilot
+              Tutor Copilot
             </h1>
             <p className="mt-1 text-sm text-[#64748B]">
               Acesse com suas credenciais do Simulation

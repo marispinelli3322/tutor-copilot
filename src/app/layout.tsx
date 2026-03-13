@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Tutor Co-Pilot | Simulation",
+  title: "Tutor Copilot | Simulation",
   description:
     "Assistente inteligente para tutores de jogos de negócios — análises comparativas e insights prontos para facilitação.",
 };
