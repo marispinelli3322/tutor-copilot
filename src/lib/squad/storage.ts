@@ -1,14 +1,18 @@
 import type { SquadMessage } from "./types";
 
-const STORAGE_KEY = "squad_conversations";
+const STORAGE_KEY = "squad_conversations_v2";
 
-interface SquadDay {
-  date: string;
+interface SquadPeriod {
+  period: number;
   messages: SquadMessage[];
   updatedAt: number;
 }
 
-function getStorageData(): Record<string, SquadDay> {
+function storageKey(groupId: string, period: number): string {
+  return `${groupId}_T${period}`;
+}
+
+function getStorageData(): Record<string, SquadPeriod> {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -18,7 +22,7 @@ function getStorageData(): Record<string, SquadDay> {
   }
 }
 
-function saveStorageData(data: Record<string, SquadDay>) {
+function saveStorageData(data: Record<string, SquadPeriod>) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -27,59 +31,38 @@ function saveStorageData(data: Record<string, SquadDay>) {
   }
 }
 
-export function getTodayKey(): string {
-  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+export function getMessagesForPeriod(groupId: string, period: number): SquadMessage[] {
+  const data = getStorageData();
+  return data[storageKey(groupId, period)]?.messages || [];
 }
 
-export function getTodayMessages(groupId: string): SquadMessage[] {
+export function saveMessages(groupId: string, period: number, messages: SquadMessage[]) {
   const data = getStorageData();
-  const key = `${groupId}_${getTodayKey()}`;
-  return data[key]?.messages || [];
-}
-
-export function saveMessages(groupId: string, date: string, messages: SquadMessage[]) {
-  const data = getStorageData();
-  const key = `${groupId}_${date}`;
-  data[key] = { date, messages, updatedAt: Date.now() };
+  const key = storageKey(groupId, period);
+  data[key] = { period, messages, updatedAt: Date.now() };
   saveStorageData(data);
 }
 
-export function getConversationDates(groupId: string): string[] {
+export function getPeriodsWithConversations(groupId: string): number[] {
   const data = getStorageData();
-  const prefix = `${groupId}_`;
+  const prefix = `${groupId}_T`;
   return Object.keys(data)
     .filter((k) => k.startsWith(prefix) && data[k].messages.length > 0)
-    .map((k) => k.slice(prefix.length))
-    .sort((a, b) => b.localeCompare(a));
+    .map((k) => parseInt(k.slice(prefix.length), 10))
+    .sort((a, b) => b - a); // newest first
 }
 
-export function getMessagesForDate(groupId: string, date: string): SquadMessage[] {
+export function clearPeriodConversation(groupId: string, period: number) {
   const data = getStorageData();
-  return data[`${groupId}_${date}`]?.messages || [];
+  delete data[storageKey(groupId, period)];
+  saveStorageData(data);
 }
 
-export function clearConversations(groupId: string) {
+export function clearAllConversations(groupId: string) {
   const data = getStorageData();
-  const prefix = `${groupId}_`;
+  const prefix = `${groupId}_T`;
   for (const key of Object.keys(data)) {
     if (key.startsWith(prefix)) delete data[key];
   }
   saveStorageData(data);
-}
-
-export function formatDateLabel(dateStr: string): string {
-  const today = getTodayKey();
-  if (dateStr === today) return "Hoje";
-
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-  if (dateStr === yesterdayStr) return "Ontem";
-
-  const date = new Date(dateStr + "T12:00:00");
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    timeZone: "America/Sao_Paulo",
-  });
 }

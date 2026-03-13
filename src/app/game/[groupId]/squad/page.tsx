@@ -27,7 +27,7 @@ export default async function SquadPage({ params }: PageProps) {
       <SquadContent
         groupId={groupId}
         gameCode={game.codigo}
-        period={game.ultimo_periodo_processado}
+        lastPeriod={game.ultimo_periodo_processado}
         professor={game.professor ?? null}
         teamCount={teams.length}
       />
