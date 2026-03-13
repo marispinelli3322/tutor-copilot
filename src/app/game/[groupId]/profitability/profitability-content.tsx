@@ -38,7 +38,8 @@ export function ProfitabilityContent({ groupId, gameCode, period, maxPeriod, pro
   const { locale, t } = useLocale();
   const periods = Array.from({ length: maxPeriod }, (_, i) => i + 1);
 
-  const services = ["Pronto Atendimento", "Internação sem Cirurgia", "Cirurgia / Alta Complexidade"];
+  // Extract unique service names from actual data (works for both Hospital and ESG)
+  const services = [...new Set(profData.map((d) => d.service))];
   const svcNames: Record<string, string> = {
     "Pronto Atendimento": t.svcEmergency,
     "Internação sem Cirurgia": t.svcInpatient,
