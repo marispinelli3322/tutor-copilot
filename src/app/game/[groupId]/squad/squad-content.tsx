@@ -52,7 +52,7 @@ export function SquadContent({ groupId, gameCode, period, professor, teamCount }
   const [activeDate, setActiveDate] = useState(getTodayKey());
   const [historyDates, setHistoryDates] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [showSquadInfo, setShowSquadInfo] = useState(false);
+  const [showSquadInfo, setShowSquadInfo] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {

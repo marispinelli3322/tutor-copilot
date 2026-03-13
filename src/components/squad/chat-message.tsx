@@ -15,6 +15,7 @@ function renderMarkdown(text: string): string {
     .replace(/^### (.+)$/gm, '<div class="font-semibold text-sm text-gray-800 mt-3 mb-1">$1</div>')
     .replace(/^## (.+)$/gm, '<div class="font-bold text-base text-gray-900 mt-4 mb-2">$1</div>')
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>")
     .replace(/\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)*)/g, (_match, header, body) => {
       const headers = header.split("|").filter(Boolean).map((h: string) => `<th class="px-2 py-1 text-left text-xs font-medium text-gray-600 border-b">${h.trim()}</th>`).join("");
       const rows = body.trim().split("\n").map((row: string) => {
