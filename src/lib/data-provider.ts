@@ -272,8 +272,12 @@ export async function getBenchmarkingData(
         vars.receitaLiquidaTotal > 0
           ? ((vars.resultadoBruto || 0) / vars.receitaLiquidaTotal) * 100
           : 0,
-      patientsAttended: vars.vidasAtendidas || 0,
-      registeredDoctors: vars.medicosCadastrados || 0,
+      patientsAttended: gameType === "esg"
+        ? (vars.lotesVendidosTotal || 0)
+        : (vars.vidasAtendidas || 0),
+      registeredDoctors: gameType === "esg"
+        ? (vars.governancaCorporativa || 0)
+        : (vars.medicosCadastrados || 0),
       nwc: vars.capitalCirculanteLiq || 0,
       overallRanking: vars.colocacaoRankingPeriodo || 0,
     });

@@ -1,6 +1,9 @@
 /**
  * Fetches all module data for a game/period and formats as markdown context
  * for the Simulation Squad system prompt.
+ *
+ * CRITICAL: This context is ALL the AI has. If data is empty, we MUST say so
+ * explicitly — never silently omit sections, or the AI will hallucinate.
  */
 
 import {
@@ -16,15 +19,17 @@ import {
   getQualityData,
   getLostRevenueData,
   getEnvironmentalData,
+  getInventoryData,
 } from "@/lib/data-provider";
 import { type GameType, detectGameType, getGameConfig } from "@/lib/game-config";
 
 export async function fetchSquadData(groupId: number, period: number, gameType?: GameType): Promise<string> {
   const game = await getGameDetails(groupId);
-  if (!game) return "Jogo não encontrado.";
+  if (!game) return "⚠️ ERRO: Jogo não encontrado. Não há dados disponíveis. Informe ao professor que o jogo não foi localizado.";
 
   const resolvedGameType = gameType || detectGameType(game.jogo_nome);
   const config = getGameConfig(resolvedGameType);
+  const isESG = resolvedGameType === "esg";
 
   const [
     teams,
@@ -38,6 +43,7 @@ export async function fetchSquadData(groupId: number, period: number, gameType?:
     quality,
     lostRevenue,
     environmental,
+    inventory,
   ] = await Promise.all([
     getGameTeams(groupId),
     getEfficiencyData(groupId, period, resolvedGameType),
@@ -47,9 +53,10 @@ export async function fetchSquadData(groupId: number, period: number, gameType?:
     getFinancialRiskData(groupId, period, resolvedGameType),
     getStrategyAlignmentData(groupId, period, resolvedGameType),
     getPricingData(groupId, period, resolvedGameType),
-    getQualityData(groupId, period, resolvedGameType),
+    isESG ? Promise.resolve([]) : getQualityData(groupId, period, resolvedGameType),
     getLostRevenueData(groupId, period, resolvedGameType),
-    resolvedGameType === "esg" ? getEnvironmentalData(groupId, period, resolvedGameType) : Promise.resolve([]),
+    isESG ? getEnvironmentalData(groupId, period, resolvedGameType) : Promise.resolve([]),
+    isESG ? getInventoryData(groupId, period, resolvedGameType) : Promise.resolve([]),
   ]);
 
   const teamNames = teams.map((t) => t.nome || `Equipe ${t.numero}`).join(", ");
@@ -59,33 +66,55 @@ export async function fetchSquadData(groupId: number, period: number, gameType?:
   // Game context
   sections.push(`## Contexto do Jogo
 - **Jogo**: ${game.codigo} (${game.jogo_nome})
+- **Tipo**: ${isESG ? "Negócios ESG (Indústria Química)" : "Hospitais"}
 - **${config.periodLabel}**: ${period}
 - **Professor**: ${game.professor || "N/A"}
 - **Equipes (${teams.length})**: ${teamNames}`);
 
   // M3: Benchmarking / Ranking
   if (benchmarking.length > 0) {
-    const rows = benchmarking.map(
-      (b) =>
-        `| #${b.overallRanking} | ${b.team} | R$${b.sharePrice.toFixed(2)} | R$${(b.netRevenue / 1e6).toFixed(1)}M | ${b.operatingMargin.toFixed(1)}% | ${b.patientsAttended} | ${b.registeredDoctors} | R$${(b.nwc / 1e6).toFixed(1)}M |`
-    );
-    sections.push(`## Ranking Geral (Benchmarking)
+    if (isESG) {
+      const rows = benchmarking.map(
+        (b) =>
+          `| #${b.overallRanking} | ${b.team} | R$${b.sharePrice.toFixed(2)} | R$${(b.netRevenue / 1e6).toFixed(1)}M | ${b.operatingMargin.toFixed(1)}% | ${b.patientsAttended} | ${b.registeredDoctors.toFixed(1)} | R$${(b.nwc / 1e6).toFixed(1)}M |`
+      );
+      sections.push(`## Ranking Geral (Benchmarking)
+| Pos | Equipe | Ação | Receita Líq. | Margem Op. | Lotes Vendidos | Gov. ESG | CCL |
+|-----|--------|------|-------------|-----------|----------------|----------|-----|
+${rows.join("\n")}`);
+    } else {
+      const rows = benchmarking.map(
+        (b) =>
+          `| #${b.overallRanking} | ${b.team} | R$${b.sharePrice.toFixed(2)} | R$${(b.netRevenue / 1e6).toFixed(1)}M | ${b.operatingMargin.toFixed(1)}% | ${b.patientsAttended} | ${b.registeredDoctors} | R$${(b.nwc / 1e6).toFixed(1)}M |`
+      );
+      sections.push(`## Ranking Geral (Benchmarking)
 | Pos | Equipe | Ação | Receita Líq. | Margem Op. | Vidas | Médicos | CCL |
 |-----|--------|------|-------------|-----------|-------|---------|-----|
 ${rows.join("\n")}`);
+    }
+  } else {
+    sections.push(`## Ranking Geral (Benchmarking)
+⚠️ SEM DADOS de benchmarking para este período.`);
   }
 
   // M1: Efficiency
-  for (const [, report] of Object.entries(efficiency)) {
-    const rows = report.teams.map(
-      (t) =>
-        `| ${t.team} | ${t.capacity} | ${t.volumeServed} | ${t.utilizationRate}% | ${t.unmetDemand} | ${t.status} |`
-    );
-    sections.push(`## Eficiência — ${report.service}
-| Equipe | Capacidade | Atendidos | Utilização | Demanda Perdida | Status |
+  const efficiencyEntries = Object.entries(efficiency);
+  if (efficiencyEntries.length > 0) {
+    for (const [, report] of efficiencyEntries) {
+      const rows = report.teams.map(
+        (t) =>
+          `| ${t.team} | ${t.capacity} | ${t.volumeServed} | ${t.utilizationRate}% | ${t.unmetDemand} | ${t.status} |`
+      );
+      const sectionTitle = isESG ? "Eficiência Produtiva" : "Eficiência Operacional";
+      sections.push(`## ${sectionTitle} — ${report.service}
+| Equipe | Capacidade | ${isESG ? "Lotes Vendidos" : "Atendidos"} | Utilização | ${isESG ? "Vendas Perdidas" : "Demanda Perdida"} | Status |
 |--------|-----------|----------|-----------|----------------|--------|
 ${rows.join("\n")}
 ${report.takeaways.map((t) => `- ${t}`).join("\n")}`);
+    }
+  } else {
+    sections.push(`## ${isESG ? "Eficiência Produtiva" : "Eficiência Operacional"}
+⚠️ SEM DADOS de eficiência para este período.`);
   }
 
   // M2: Profitability
@@ -94,10 +123,13 @@ ${report.takeaways.map((t) => `- ${t}`).join("\n")}`);
       (p) =>
         `| ${p.team} | ${p.service} | R$${(p.totalRevenue / 1e6).toFixed(1)}M | R$${(p.disallowances / 1e6).toFixed(1)}M | R$${(p.netRevenue / 1e6).toFixed(1)}M | R$${(p.contributionMargin / 1e6).toFixed(1)}M | ${p.marginPercent.toFixed(1)}% |`
     );
-    sections.push(`## Lucratividade por Serviço
-| Equipe | Serviço | Receita Bruta | Glosas | Receita Líq. | Margem Contrib. | Margem % |
+    sections.push(`## Lucratividade por ${isESG ? "Produto" : "Serviço"}
+| Equipe | ${isESG ? "Produto" : "Serviço"} | Receita Bruta | ${isESG ? "Devoluções" : "Glosas"} | Receita Líq. | Margem Contrib. | Margem % |
 |--------|---------|-------------|--------|-------------|----------------|---------|
 ${rows.join("\n")}`);
+  } else {
+    sections.push(`## Lucratividade
+⚠️ SEM DADOS de lucratividade para este período.`);
   }
 
   // M6: Financial Risk
@@ -110,18 +142,35 @@ ${rows.join("\n")}`);
 | Equipe | Caixa | CCL | Alavancagem | Rotativo | Emergencial | Status |
 |--------|-------|-----|------------|----------|-------------|--------|
 ${rows.join("\n")}`);
+  } else {
+    sections.push(`## Risco Financeiro
+⚠️ SEM DADOS de risco financeiro para este período.`);
   }
 
   // M9: Governance
   if (governance.length > 0) {
-    const rows = governance.map(
-      (g) =>
-        `| ${g.team} | ${g.score.toFixed(1)} | ${g.creditoRotativo} | ${g.totalDispensa} | ${g.usoMaoObraExtra} | ${g.numeroCertificacoes} | ${g.transparencia} | ${g.taxaInfeccao.toFixed(2)} |`
-    );
-    sections.push(`## Governança Corporativa
+    if (isESG) {
+      const rows = governance.map(
+        (g) =>
+          `| ${g.team} | ${g.score.toFixed(1)} | ${g.creditoRotativo} | ${g.totalDispensa} | ${g.usoMaoObraExtra} | ${g.numeroCertificacoes} | ${g.transparencia} | ${g.taxaInfeccao.toFixed(2)} |`
+      );
+      sections.push(`## Governança ESG
+| Equipe | Score | Rotativo | Demissões | H.Extra | Cert. ESG | Relatórios | Pluma |
+|--------|-------|---------|-----------|---------|----------|-----------|-------|
+${rows.join("\n")}`);
+    } else {
+      const rows = governance.map(
+        (g) =>
+          `| ${g.team} | ${g.score.toFixed(1)} | ${g.creditoRotativo} | ${g.totalDispensa} | ${g.usoMaoObraExtra} | ${g.numeroCertificacoes} | ${g.transparencia} | ${g.taxaInfeccao.toFixed(2)} |`
+      );
+      sections.push(`## Governança Corporativa
 | Equipe | Score | Rotativo | Demissões | H.Extra | Certificações | Transparência | Infecção |
 |--------|-------|---------|-----------|---------|--------------|--------------|----------|
 ${rows.join("\n")}`);
+    }
+  } else {
+    sections.push(`## Governança
+⚠️ SEM DADOS de governança para este período.`);
   }
 
   // M7: Strategy Alignment
@@ -137,30 +186,90 @@ ${rows.join("\n")}`);
 | Equipe | Score | Itens Prioritários (peso≥2, ranking, alinhado?) |
 |--------|-------|----------------------------------------------|
 ${summaryRows.join("\n")}`);
+  } else {
+    sections.push(`## Alinhamento Estratégico
+⚠️ SEM DADOS de alinhamento estratégico para este período.`);
   }
 
   // M8: Pricing
   if (pricing.length > 0) {
-    const rows = pricing.map(
-      (p) =>
-        `| ${p.team} | R$${p.pricePA.toFixed(0)} | R$${p.priceINT.toFixed(0)} | R$${p.priceAC.toFixed(0)} | ${(p.marketSharePA * 100).toFixed(1)}% | ${(p.marketShareINT * 100).toFixed(1)}% | ${(p.marketShareAC * 100).toFixed(1)}% |`
-    );
-    sections.push(`## Precificação e Market Share
+    if (isESG) {
+      const rows = pricing.map(
+        (p) =>
+          `| ${p.team} | R$${p.pricePA.toFixed(0)} | R$${p.priceINT.toFixed(0)} | R$${p.priceAC.toFixed(0)} | ${(p.marketSharePA * 100).toFixed(1)}% | ${(p.marketShareINT * 100).toFixed(1)}% | ${(p.marketShareAC * 100).toFixed(1)}% |`
+      );
+      sections.push(`## Precificação e Market Share
+| Equipe | Preço Shampoo | Preço Repelente | Preço Selante | Share Shampoo | Share Repelente | Share Selante |
+|--------|-------------|---------------|-------------|-------------|---------------|-------------|
+${rows.join("\n")}`);
+    } else {
+      const rows = pricing.map(
+        (p) =>
+          `| ${p.team} | R$${p.pricePA.toFixed(0)} | R$${p.priceINT.toFixed(0)} | R$${p.priceAC.toFixed(0)} | ${(p.marketSharePA * 100).toFixed(1)}% | ${(p.marketShareINT * 100).toFixed(1)}% | ${(p.marketShareAC * 100).toFixed(1)}% |`
+      );
+      sections.push(`## Precificação e Market Share
 | Equipe | Preço PA | Preço INT | Preço AC | Share PA | Share INT | Share AC |
 |--------|---------|----------|---------|---------|----------|---------|
 ${rows.join("\n")}`);
+    }
+  } else {
+    sections.push(`## Precificação
+⚠️ SEM DADOS de precificação para este período.`);
   }
 
-  // M10: Quality
-  if (quality.length > 0) {
-    const rows = quality.map(
-      (q) =>
-        `| ${q.team} | ${q.taxaInfeccao.toFixed(2)} | ${q.certificacoes} | ${q.alertaAnvisa} | ${q.multaAnvisa} | ${q.qualityStatus} |`
-    );
-    sections.push(`## Qualidade Assistencial
+  // M10: Quality (Hospital only)
+  if (!isESG) {
+    if (quality.length > 0) {
+      const rows = quality.map(
+        (q) =>
+          `| ${q.team} | ${q.taxaInfeccao.toFixed(2)} | ${q.certificacoes} | ${q.alertaAnvisa} | ${q.multaAnvisa} | ${q.qualityStatus} |`
+      );
+      sections.push(`## Qualidade Assistencial
 | Equipe | Infecção | Certificações | Alertas ANVISA | Multas | Status |
 |--------|---------|--------------|---------------|--------|--------|
 ${rows.join("\n")}`);
+    } else {
+      sections.push(`## Qualidade Assistencial
+⚠️ SEM DADOS de qualidade para este período.`);
+    }
+  }
+
+  // Environmental (ESG only)
+  if (isESG) {
+    if (environmental.length > 0) {
+      const rows = environmental.map(
+        (e) =>
+          `| ${e.team} | ${e.nivelPluma.toFixed(1)} | ${e.smsAmbiental.toFixed(1)} | ${e.multaAmbiental} | ${e.numeroCertificacoesESG} | ${e.envStatus} |`
+      );
+      sections.push(`## Gestão Ambiental
+| Equipe | Pluma | SMS | Multas | Cert. ESG | Status |
+|--------|-------|-----|--------|----------|--------|
+${rows.join("\n")}`);
+    } else {
+      sections.push(`## Gestão Ambiental
+⚠️ SEM DADOS de gestão ambiental para este período.`);
+    }
+  }
+
+  // Inventory (ESG only)
+  if (isESG) {
+    if (inventory.length > 0) {
+      const rows: string[] = [];
+      for (const inv of inventory) {
+        for (const prod of inv.products) {
+          rows.push(
+            `| ${inv.team} | ${prod.name} | ${prod.estoque} | R$${prod.custoUnitario.toFixed(0)} | R$${prod.custoArmazenagem.toFixed(0)} | ${prod.producao} | ${prod.capacidadeProdutiva} | ${prod.utilizacao.toFixed(1)}% |`
+          );
+        }
+      }
+      sections.push(`## Estoque e Produção
+| Equipe | Produto | Estoque | Custo Unit. | Armazenagem | Produção | Capacidade | Utilização |
+|--------|---------|---------|-----------|------------|---------|-----------|-----------|
+${rows.join("\n")}`);
+    } else {
+      sections.push(`## Estoque e Produção
+⚠️ SEM DADOS de estoque para este período.`);
+    }
   }
 
   // M11: Lost Revenue
@@ -173,18 +282,9 @@ ${rows.join("\n")}`);
 | Equipe | Total Perdido | % Receita | Tipo Dominante |
 |--------|-------------|----------|---------------|
 ${rows.join("\n")}`);
-  }
-
-  // Environmental (ESG only)
-  if (environmental.length > 0) {
-    const rows = environmental.map(
-      (e) =>
-        `| ${e.team} | ${e.nivelPluma.toFixed(1)} | ${e.smsAmbiental.toFixed(1)} | ${e.multaAmbiental} | ${e.numeroCertificacoesESG} | ${e.envStatus} |`
-    );
-    sections.push(`## Gestão Ambiental
-| Equipe | Pluma | SMS | Multas | Cert. ESG | Status |
-|--------|-------|-----|--------|----------|--------|
-${rows.join("\n")}`);
+  } else {
+    sections.push(`## Receita Perdida
+⚠️ SEM DADOS de receita perdida para este período.`);
   }
 
   return sections.join("\n\n");
