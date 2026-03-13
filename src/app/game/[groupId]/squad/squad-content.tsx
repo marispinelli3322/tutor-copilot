@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { ArrowLeft, CalendarDays, RotateCcw, Play } from "lucide-react";
+import { ArrowLeft, CalendarDays, RotateCcw, Play, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatWindow } from "@/components/squad/chat-window";
 import { ChatInput } from "@/components/squad/chat-input";
@@ -15,6 +15,17 @@ import {
   formatDateLabel,
 } from "@/lib/squad/storage";
 import Link from "next/link";
+
+const SQUAD_MEMBERS = [
+  { icon: "🏛️", name: "Dr. Mendonça", role: "Árbitro-Geral", expertise: "Comparativo entre equipes, regras do jogo, histórico" },
+  { icon: "💰", name: "Helena Bastos", role: "Diretora Financeira", expertise: "Caixa, EBITDA, margem, empréstimos, CCL" },
+  { icon: "🏥", name: "Carlos Drummond", role: "Diretor de Operações", expertise: "Leitos, UTI, PA, utilização, demanda perdida" },
+  { icon: "👥", name: "Patrícia Souza", role: "Diretora de RH", expertise: "Colaboradores, horas extras, salários, PLR" },
+  { icon: "📊", name: "Rodrigo Martins", role: "Head de Pricing", expertise: "Ticket médio, operadoras, glosas, market share" },
+  { icon: "⚕️", name: "Dra. Fernanda Castro", role: "Diretora de Qualidade", expertise: "Infecção, certificações, ANVISA, governança" },
+  { icon: "🎯", name: "André Vasconcelos", role: "Estrategista-Chefe", expertise: "Ranking, valor da ação, pesos, alinhamento" },
+  { icon: "📢", name: "Juliana Reis", role: "Diretora Comercial", expertise: "Imagem, médicos, operadoras, convênios" },
+];
 
 const ANALYSIS_PROMPT =
   "Abram a sessão de análise. Dr. Mendonça, comece com a visão geral comparativa: ranking, quem lidera, quem está caindo, alertas principais. André, complemente com o alinhamento estratégico. Depois o time analisa os pontos mais relevantes do trimestre.";
@@ -41,6 +52,7 @@ export function SquadContent({ groupId, gameCode, period, professor, teamCount }
   const [activeDate, setActiveDate] = useState(getTodayKey());
   const [historyDates, setHistoryDates] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showSquadInfo, setShowSquadInfo] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -250,7 +262,16 @@ export function SquadContent({ groupId, gameCode, period, professor, teamCount }
               </button>
             )}
             <button
-              onClick={() => setShowHistory(!showHistory)}
+              onClick={() => { setShowSquadInfo(!showSquadInfo); setShowHistory(false); }}
+              className={`p-2 rounded-lg transition-colors ${
+                showSquadInfo ? "bg-gray-100 text-[#C5A832]" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+              }`}
+              title="Conheça o Squad"
+            >
+              <Users className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => { setShowHistory(!showHistory); setShowSquadInfo(false); }}
               className={`p-2 rounded-lg transition-colors ${
                 showHistory ? "bg-gray-100 text-[#C5A832]" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
               }`}
@@ -268,6 +289,30 @@ export function SquadContent({ groupId, gameCode, period, professor, teamCount }
         </div>
 
         <div className="flex flex-1 overflow-hidden">
+          {/* Squad info sidebar */}
+          {showSquadInfo && (
+            <div className="w-64 border-r border-gray-200 overflow-y-auto bg-gray-50 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-medium text-gray-400 uppercase">O Squad</div>
+                <button onClick={() => setShowSquadInfo(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              {SQUAD_MEMBERS.map((m) => (
+                <div key={m.name} className="bg-white rounded-lg p-2.5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-base">{m.icon}</span>
+                    <div>
+                      <div className="text-xs font-semibold text-[#1A365D]">{m.name}</div>
+                      <div className="text-[10px] text-[#8B7523]">{m.role}</div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-500 leading-tight">{m.expertise}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* History sidebar */}
           {showHistory && (
             <div className="w-48 border-r border-gray-200 overflow-y-auto bg-gray-50 p-2 space-y-0.5">
