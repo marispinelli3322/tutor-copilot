@@ -1,218 +1,199 @@
 /**
- * ESG Game Configuration (Negócios ESG)
- * Chemical industry game: Shampoo, Repelente, Selante
+ * ESG Game Configuration (Negócios ESG v1.3)
+ * Chemical industry game: Shampoo (130), Repelente (131), Selante (132)
  * 6 strategic objectives, ESG governance, environmental management
+ *
+ * IMPORTANT: ESG uses produto_id column in variavel_empresarial/item_decisao.
+ * Per-product codes are stored with produto_id (130/131/132).
+ * The query layer synthesizes suffixed keys: fdPreco + produto_id=130 → fdPreco_p1
  */
 
 import type { GameConfig } from "../game-config";
 
 // ── M1: Eficiência Produtiva ──────────────────────────────────
+// Aggregate codes (produto_id IS NULL)
 export const ESG_EFFICIENCY_CODES = [
-  // Production capacity and volume
-  "capacidadeProdutiva",
-  "capacidadeProdutiva_p1",
-  "capacidadeProdutiva_p2",
-  "capacidadeProdutiva_p3",
-  "producao_p1",
-  "producao_p2",
-  "producao_p3",
-  "vendasPerdidas_p1",
-  "vendasPerdidas_p2",
-  "vendasPerdidas_p3",
-  "demandaFinal_p1",
-  "demandaFinal_p2",
-  "demandaFinal_p3",
-  "lotesVendidos_p1",
-  "lotesVendidos_p2",
-  "lotesVendidos_p3",
+  "outrasInfosCapacidadeFabrica",
+] as const;
+
+// Per-product codes (queried with produto_id, suffixed as _p1/_p2/_p3)
+export const ESG_EFFICIENCY_PRODUCT_CODES = [
+  "ctaEstoqueUnidadesProdutosVendidos",
+  "ctaEstoqueUnidadesVendasPerdidas",
+  "ctaEstoqueUnidadesProdutosProduzidos",
+  "outrasInfosUsoCapacidadeFabril",
 ] as const;
 
 // ── M2: Lucratividade ────────────────────────────────────────
 export const ESG_PROFITABILITY_CODES = [
-  "receita_total_p1",
-  "receita_total_p2",
-  "receita_total_p3",
-  "receita_liquida_p1",
-  "receita_liquida_p2",
-  "receita_liquida_p3",
-  "custo_producao_p1",
-  "custo_producao_p2",
-  "custo_producao_p3",
-  "custo_materiaprima_p1",
-  "custo_materiaprima_p2",
-  "custo_materiaprima_p3",
-  "custo_pessoal_p1",
-  "custo_pessoal_p2",
-  "custo_pessoal_p3",
-  "margem_contribuicao_p1",
-  "margem_contribuicao_p2",
-  "margem_contribuicao_p3",
-  "percentual_margem_contribuicao_p1",
-  "percentual_margem_contribuicao_p2",
-  "percentual_margem_contribuicao_p3",
-  "receitaLiquidaTotal",
-  "resultadoOperacionalLiquido",
-  "resultadoBruto",
   "ebitda",
+  "ebit",
+  "dreLucroBruto",
+  "dreLucroOperacional",
+  "dreLucroLiquidoExercicio",
+  "dreCustoProdutosVendidos",
+  "dreDepreciacao",
+] as const;
+
+export const ESG_PROFITABILITY_PRODUCT_CODES = [
+  "ctaCaixaReceitaVenda",
+  "ctaEstoqueProdutosVendidos",
+  "ctaEstoqueProdutosProduzidos",
+  "outrasInfosMateriaPrima",
+  "outrasInfosSalariosEEncargos",
+  "outrasInfosCustoMedioUnitario",
 ] as const;
 
 // ── M3: Benchmarking ────────────────────────────────────────
 export const ESG_BENCHMARKING_CODES = [
-  "valor_acao",
-  "receitaLiquidaTotal",
-  "resultadoOperacionalLiquido",
-  "resultadoOperacionalLiquidoAcumulado",
-  "capitalCirculanteLiq",
+  "outrasInfosPrecoAcao",
+  "capitalCirculanteLiquido",
   "patrimonioLiquido",
   "colocacaoRankingPeriodo",
   "numeroPontosPeriodo",
-  "saldoFinal",
-  "lotesVendidosTotal",
-  "faturamentoTotal",
-  "lucroAcumulado",
+  "ctaCaixaSaldoFinal",
+  "totalDeLotesVendidos",
+  "ctaCaixaReceitaVenda",
+  "resultadoAcumuladoAtual",
+  "resultadoAcumuladoAtualAntesDistribuicao",
   "governancaCorporativa",
+  "ebitda",
+  "dreLucroBruto",
+  "dreLucroOperacional",
+  "dreLucroLiquidoExercicio",
+  "balancoAtivoTotal",
+  "balancoPassivoTotal",
+  "margemOperacional",
 ] as const;
 
 // ── M5: Evolução (timeseries) ────────────────────────────────
 export const ESG_TIMESERIES_CODES = [
-  "valor_acao",
-  "receitaLiquidaTotal",
-  "resultadoOperacionalLiquido",
+  "outrasInfosPrecoAcao",
+  "ctaCaixaReceitaVenda",
+  "dreLucroOperacional",
   "governancaCorporativa",
 ] as const;
 
 // ── M6: Risco Financeiro ────────────────────────────────────
 export const ESG_FINANCIAL_RISK_CODES = [
-  "saldoFinal",
-  "saldoInicialMes",
-  "capitalCirculanteLiq",
+  "ctaCaixaSaldoFinal",
+  "ctaCaixaSaldoInicial",
+  "capitalCirculanteLiquido",
   "patrimonioLiquido",
-  "totalAtivo",
-  "totalPassivo",
-  "creditoRotativo",
-  "utilizacaoCreditoRotativo",
-  "percentualCreditoRotativo",
-  "despesaCreditoRotativo",
-  "despesa_emprestimo",
-  "taxa_juros_emprestimo",
-  "planoEmergencial",
-  "receitaLiquidaTotal",
+  "balancoAtivoTotal",
+  "balancoPassivoTotal",
+  "balancoCreditoRotativo",
+  "balancoEmprestimos",
+  "outrasInfosTaxaCreditoRotativo",
+  "outrasInfosTaxaJurosEmprestimos",
+  "ctaCaixaDespesaFinanceira",
+  "ctaCaixaPagamentoCreditoRotativo",
+  "ctaCaixaPagamentoEmprestimo",
+  "ctaCaixaReceitaVenda",
+  "dreLucroOperacional",
 ] as const;
 
 // ── M7: Alinhamento Estratégico ──────────────────────────────
 export const ESG_STRATEGY_RESULT_CODES = [
-  "valor_acao",
-  "capitalCirculanteLiq",
-  "faturamentoTotal",
-  "lucroAcumulado",
-  "lotesVendidosTotal",
+  "outrasInfosPrecoAcao",
+  "capitalCirculanteLiquido",
+  "ctaCaixaReceitaVenda",
+  "resultadoAcumuladoAtualAntesDistribuicao",
+  "totalDeLotesVendidos",
   "governancaCorporativa",
 ] as const;
 
 // ── M9: Governança ESG ──────────────────────────────────────
 export const ESG_GOVERNANCE_CODES = [
   "governancaCorporativa",
-  "governancaCorporativa_horaExtra",
-  "governancaCorporativa_demissoes",
-  "governancaCorporativa_pluma",
-  "governancaCorporativa_certificacoesESG",
-  "governancaCorporativa_creditoRotativo",
-  "governancaCorporativa_relatorios",
+  "governancaCorporativa_usoMaoOBraExtra",
+  "governancaCorporativa_totalDispensa",
+  "governancaCorporativa_ambPlumaAtual",
+  "governancaCorporativa_indQuimEsgCertificacaoInternacionalAcumulado",
+  "governancaCorporativa_balancoCreditoRotativo",
+  "governancaCorporativa_liberouRelatoriosFinanceiros",
 ] as const;
 
 // ── M8: Precificação ────────────────────────────────────────
+// Aggregate decision codes
 export const ESG_PRICING_DECISION_CODES = [
-  "fdPreco_p1",
-  "fdPreco_p2",
-  "fdPreco_p3",
-  "fdUnidadesAProduzir_p1",
-  "fdUnidadesAProduzir_p2",
-  "fdUnidadesAProduzir_p3",
-  "fdInvestimentoPeD_p1",
-  "fdInvestimentoPeD_p2",
-  "fdInvestimentoPeD_p3",
+  "fdCapacidadeFabril",
+  "fdNumTrabalhadores",
 ] as const;
 
+// Per-product decision codes
+export const ESG_PRICING_DECISION_PRODUCT_CODES = [
+  "fdPreco",
+  "fdUnidadesAProduzir",
+  "fdPesqDesenvolvimento",
+  "fdPropagandaPromocao",
+] as const;
+
+// Per-product result codes
+export const ESG_PRICING_RESULT_PRODUCT_CODES = [
+  "marketShare",
+  "ctaCaixaReceitaVenda",
+  "ctaEstoqueUnidadesProdutosVendidos",
+] as const;
+
+// Aggregate result codes
 export const ESG_PRICING_RESULT_CODES = [
-  "marketShare_p1",
-  "marketShare_p2",
-  "marketShare_p3",
-  "medias_p1",
-  "medias_p2",
-  "medias_p3",
-  "receita_total_p1",
-  "receita_total_p2",
-  "receita_total_p3",
-  "lotesVendidos_p1",
-  "lotesVendidos_p2",
-  "lotesVendidos_p3",
-  "investimentoPeD_p1",
-  "investimentoPeD_p2",
-  "investimentoPeD_p3",
+  "totalDeLotesVendidos",
+  "outrasInfosCapacidadeFabrica",
 ] as const;
 
 // ── M10: Gestão Ambiental (ESG-specific) ────────────────────
 export const ESG_ENVIRONMENTAL_CODES = [
-  "pluma",
-  "nivelPluma",
-  "smsAmbiental",
-  "multaAmbiental",
-  "remediacao",
-  "investimentoRemediacao",
-  "certificacaoESG",
-  "numeroCertificacoesESG",
-  "investimentoCertificacaoESG",
-  "investimentoAcumuladoCertificacaoESG",
-  "gastoDescarte",
+  "ambPlumaAtual",
+  "ambMultaAmbiental",
+  "ambQtdeMultas",
+  "ambInvestSmsAcumulado",
+  "ambFoiFiscalizada",
+  "ambObteveTecnologia",
+  "ambRemediacaoTerreno",
+  "indQuimEsgCertificacaoInternacional",
+  "indQuimEsgCertificacaoInternacionalAcumulado",
+  "indQuimEsgInvestimentoCertificacaoInternacionalAcumulado",
+  "indQuiInvestimentoAcumuladaoMinimoCertificacoesInternacionais",
+  "liberouRelatoriosFinanceiros",
+  "mediaInvestSms",
 ] as const;
 
 // ── M11: Receita Perdida ────────────────────────────────────
-export const ESG_LOST_REVENUE_CODES = [
-  "vendasPerdidas_p1",
-  "vendasPerdidas_p2",
-  "vendasPerdidas_p3",
-  "receita_liquida_p1",
-  "receita_liquida_p2",
-  "receita_liquida_p3",
-  "lotesVendidos_p1",
-  "lotesVendidos_p2",
-  "lotesVendidos_p3",
-  "margem_contribuicao_p1",
-  "margem_contribuicao_p2",
-  "margem_contribuicao_p3",
-  "demandaFinal_p1",
-  "demandaFinal_p2",
-  "demandaFinal_p3",
+export const ESG_LOST_REVENUE_CODES = [] as const;
+
+export const ESG_LOST_REVENUE_PRODUCT_CODES = [
+  "ctaEstoqueUnidadesVendasPerdidas",
+  "ctaEstoqueUnidadesProdutosVendidos",
+  "ctaCaixaReceitaVenda",
+  "ctaEstoqueProdutosVendidos",
 ] as const;
 
 // ── Estoque e Produção ──────────────────────────────────────
 export const ESG_INVENTORY_CODES = [
-  "estoque_p1",
-  "estoque_p2",
-  "estoque_p3",
-  "custoUnitario_p1",
-  "custoUnitario_p2",
-  "custoUnitario_p3",
-  "custoArmazenagem_p1",
-  "custoArmazenagem_p2",
-  "custoArmazenagem_p3",
-  "producao_p1",
-  "producao_p2",
-  "producao_p3",
-  "capacidadeProdutiva_p1",
-  "capacidadeProdutiva_p2",
-  "capacidadeProdutiva_p3",
+  "outrasInfosCapacidadeFabrica",
+] as const;
+
+export const ESG_INVENTORY_PRODUCT_CODES = [
+  "ctaEstoqueUnidadesEstoqueFinal",
+  "ctaEstoqueUnidadesEstoqueInicial",
+  "outrasInfosCustoMedioUnitario",
+  "outrasInfosCustoUnitarioPadrao",
+  "ctaEstoqueUnidadesProdutosProduzidos",
+  "outrasInfosUsoCapacidadeFabril",
+  "ctaEstoqueEstoqueFinal",
+  "ctaEstoqueEstoqueInicial",
 ] as const;
 
 // No quality codes — ESG replaces quality with environmental
 export const ESG_QUALITY_CODES = [] as const;
 
 export const ESG_STRATEGY_ITEMS = [
-  { name: "Valor da Ação", code: "valor_acao" },
-  { name: "Capital Circulante Líq.", code: "capitalCirculanteLiq" },
-  { name: "Faturamento Total", code: "faturamentoTotal" },
-  { name: "Lucro Acumulado", code: "lucroAcumulado" },
-  { name: "Lotes Vendidos Total", code: "lotesVendidosTotal" },
+  { name: "Valor da Ação", code: "outrasInfosPrecoAcao" },
+  { name: "Capital Circulante Líq.", code: "capitalCirculanteLiquido" },
+  { name: "Receita de Vendas", code: "ctaCaixaReceitaVenda" },
+  { name: "Resultado Acumulado", code: "resultadoAcumuladoAtualAntesDistribuicao" },
+  { name: "Lotes Vendidos Total", code: "totalDeLotesVendidos" },
   { name: "Governança ESG", code: "governancaCorporativa" },
 ];
 
@@ -287,6 +268,7 @@ export const esgConfig: GameConfig = {
   periodLabelShort: "M",
   maxPeriods: 12,
   nameFilter: "%ESG%",
+  productMap: { 130: "p1", 131: "p2", 132: "p3" },
   products: [
     { key: "P1", name: "Shampoo", suffix: "p1" },
     { key: "P2", name: "Repelente", suffix: "p2" },
@@ -297,31 +279,31 @@ export const esgConfig: GameConfig = {
       key: "shampoo",
       label: "Shampoo",
       suffix: "p1",
-      attended: "lotesVendidos_p1",
-      demand: "demandaFinal_p1",
-      limit: "capacidadeProdutiva_p1",
-      lost: "vendasPerdidas_p1",
-      hasIdleness: true,
+      attended: "ctaEstoqueUnidadesProdutosVendidos_p1",
+      demand: undefined,
+      limit: undefined,
+      lost: "ctaEstoqueUnidadesVendasPerdidas_p1",
+      hasIdleness: false,
     },
     {
       key: "repelente",
       label: "Repelente",
       suffix: "p2",
-      attended: "lotesVendidos_p2",
-      demand: "demandaFinal_p2",
-      limit: "capacidadeProdutiva_p2",
-      lost: "vendasPerdidas_p2",
-      hasIdleness: true,
+      attended: "ctaEstoqueUnidadesProdutosVendidos_p2",
+      demand: undefined,
+      limit: undefined,
+      lost: "ctaEstoqueUnidadesVendasPerdidas_p2",
+      hasIdleness: false,
     },
     {
       key: "selante",
       label: "Selante",
       suffix: "p3",
-      attended: "lotesVendidos_p3",
-      demand: "demandaFinal_p3",
-      limit: "capacidadeProdutiva_p3",
-      lost: "vendasPerdidas_p3",
-      hasIdleness: true,
+      attended: "ctaEstoqueUnidadesProdutosVendidos_p3",
+      demand: undefined,
+      limit: undefined,
+      lost: "ctaEstoqueUnidadesVendasPerdidas_p3",
+      hasIdleness: false,
     },
   ],
   modules: [
@@ -339,27 +321,33 @@ export const esgConfig: GameConfig = {
   ],
   codes: {
     efficiency: ESG_EFFICIENCY_CODES,
+    efficiencyProduct: ESG_EFFICIENCY_PRODUCT_CODES,
     profitability: ESG_PROFITABILITY_CODES,
+    profitabilityProduct: ESG_PROFITABILITY_PRODUCT_CODES,
     benchmarking: ESG_BENCHMARKING_CODES,
     timeseries: ESG_TIMESERIES_CODES,
     financialRisk: ESG_FINANCIAL_RISK_CODES,
     strategyResults: ESG_STRATEGY_RESULT_CODES,
     governance: ESG_GOVERNANCE_CODES,
     pricingDecisions: ESG_PRICING_DECISION_CODES,
+    pricingDecisionsProduct: ESG_PRICING_DECISION_PRODUCT_CODES,
     pricingResults: ESG_PRICING_RESULT_CODES,
+    pricingResultsProduct: ESG_PRICING_RESULT_PRODUCT_CODES,
     quality: ESG_QUALITY_CODES,
     lostRevenue: ESG_LOST_REVENUE_CODES,
+    lostRevenueProduct: ESG_LOST_REVENUE_PRODUCT_CODES,
     environmental: ESG_ENVIRONMENTAL_CODES,
     inventory: ESG_INVENTORY_CODES,
+    inventoryProduct: ESG_INVENTORY_PRODUCT_CODES,
   },
   strategyItems: ESG_STRATEGY_ITEMS,
   governanceComponents: [
-    { key: "horaExtra", code: "governancaCorporativa_horaExtra", labelKey: "govHorasExtras" },
-    { key: "demissoes", code: "governancaCorporativa_demissoes", labelKey: "govDispensas" },
-    { key: "pluma", code: "governancaCorporativa_pluma", labelKey: "govPluma" },
-    { key: "certificacoesESG", code: "governancaCorporativa_certificacoesESG", labelKey: "govCertificacoesESG" },
-    { key: "creditoRotativo", code: "governancaCorporativa_creditoRotativo", labelKey: "govCreditoRotativo" },
-    { key: "relatorios", code: "governancaCorporativa_relatorios", labelKey: "govRelatorios" },
+    { key: "horaExtra", code: "governancaCorporativa_usoMaoOBraExtra", labelKey: "govHorasExtras" },
+    { key: "demissoes", code: "governancaCorporativa_totalDispensa", labelKey: "govDispensas" },
+    { key: "pluma", code: "governancaCorporativa_ambPlumaAtual", labelKey: "govPluma" },
+    { key: "certificacoesESG", code: "governancaCorporativa_indQuimEsgCertificacaoInternacionalAcumulado", labelKey: "govCertificacoesESG" },
+    { key: "creditoRotativo", code: "governancaCorporativa_balancoCreditoRotativo", labelKey: "govCreditoRotativo" },
+    { key: "relatorios", code: "governancaCorporativa_liberouRelatoriosFinanceiros", labelKey: "govRelatorios" },
   ],
   squadPrompt: ESG_SQUAD_PROMPT,
 };

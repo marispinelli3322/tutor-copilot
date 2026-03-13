@@ -53,20 +53,28 @@ export interface GameConfig {
   products: ProductDefinition[];
   services: ServiceDefinition[];
   modules: ModuleDefinition[];
+  /** produto_id → suffix map for per-product queries (ESG only) */
+  productMap?: Record<number, string>;
   codes: {
     efficiency: readonly string[];
+    efficiencyProduct?: readonly string[];
     profitability: readonly string[];
+    profitabilityProduct?: readonly string[];
     benchmarking: readonly string[];
     timeseries: readonly string[];
     financialRisk: readonly string[];
     strategyResults: readonly string[];
     governance: readonly string[];
     pricingDecisions: readonly string[];
+    pricingDecisionsProduct?: readonly string[];
     pricingResults: readonly string[];
+    pricingResultsProduct?: readonly string[];
     quality: readonly string[];
     lostRevenue: readonly string[];
+    lostRevenueProduct?: readonly string[];
     environmental?: readonly string[];
     inventory?: readonly string[];
+    inventoryProduct?: readonly string[];
   };
   strategyItems: StrategyItem[];
   governanceComponents: GovernanceComponent[];

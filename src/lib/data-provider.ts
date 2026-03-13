@@ -4,7 +4,9 @@
  *
  * The variavel_empresarial table uses an EAV model:
  * Each row = (empresa_id, periodo, codigo, valor)
- * 444 variable codes per team per period.
+ *
+ * ESG games use produto_id column for per-product data.
+ * Hospital games encode service in the code name (e.g., receita_total_prontoAtendimento).
  */
 
 import type {
@@ -24,9 +26,58 @@ import type {
   LostRevenueData,
   LostRevenueServiceData,
 } from "./types";
-import { type GameType, detectGameType, getGameConfig } from "./game-config";
+import { type GameType, type GameConfig, getGameConfig } from "./game-config";
+import type { TeamPivot } from "./queries";
 
 const useMock = () => process.env.USE_MOCK === "true";
+
+// ── Helper: fetch module data (aggregate + per-product for ESG) ──
+
+async function fetchModuleData(
+  groupId: number,
+  period: number,
+  config: GameConfig,
+  aggCodes: readonly string[],
+  prodCodes?: readonly string[]
+): Promise<TeamPivot> {
+  const { getTeamVariablesPivot, getTeamVariablesPivotByProduct, mergeTeamPivots } = await import("./queries");
+
+  if (config.productMap && prodCodes && prodCodes.length > 0) {
+    // ESG: dual query (aggregate with produto_id IS NULL + per-product)
+    const [agg, prod] = await Promise.all([
+      aggCodes.length > 0
+        ? getTeamVariablesPivot(groupId, period, [...aggCodes], true)
+        : Promise.resolve({} as TeamPivot),
+      getTeamVariablesPivotByProduct(groupId, period, [...prodCodes], config.productMap),
+    ]);
+    return mergeTeamPivots(agg, prod);
+  } else {
+    // Hospital: single query (no produto_id filtering needed)
+    return getTeamVariablesPivot(groupId, period, [...aggCodes]);
+  }
+}
+
+async function fetchModuleDecisions(
+  groupId: number,
+  period: number,
+  config: GameConfig,
+  aggCodes: readonly string[],
+  prodCodes?: readonly string[]
+): Promise<TeamPivot> {
+  const { getTeamDecisions, getTeamDecisionsByProduct, mergeTeamPivots } = await import("./queries");
+
+  if (config.productMap && prodCodes && prodCodes.length > 0) {
+    const [agg, prod] = await Promise.all([
+      aggCodes.length > 0
+        ? getTeamDecisions(groupId, period, [...aggCodes], true)
+        : Promise.resolve({} as TeamPivot),
+      getTeamDecisionsByProduct(groupId, period, [...prodCodes], config.productMap),
+    ]);
+    return mergeTeamPivots(agg, prod);
+  } else {
+    return getTeamDecisions(groupId, period, [...aggCodes]);
+  }
+}
 
 // ── Games ───────────────────────────────────────────────────
 
@@ -107,14 +158,14 @@ export async function getEfficiencyData(
   }
 
   const config = getGameConfig(gameType);
-  const { getTeamVariablesPivot } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.efficiency]);
+  const data = await fetchModuleData(groupId, period, config,
+    config.codes.efficiency, config.codes.efficiencyProduct);
 
   const services = config.services.map((svc) => ({
     key: svc.key,
     label: svc.label,
     attended: svc.attended!,
-    demand: svc.demand!,
+    demand: svc.demand,
     limit: svc.limit,
     lost: svc.lost!,
   }));
@@ -128,9 +179,10 @@ export async function getEfficiencyData(
       const d = data[teamNum];
       const vars = d as unknown as Record<string, number>;
       const attended = vars[svc.attended] || 0;
-      const demand = vars[svc.demand] || 0;
-      const capacity = svc.limit ? vars[svc.limit] || demand : demand;
       const lost = vars[svc.lost] || 0;
+      // For ESG: demand = attended + lost (no explicit demand code)
+      const demand = svc.demand ? (vars[svc.demand] || 0) : (attended + lost);
+      const capacity = svc.limit ? (vars[svc.limit] || demand) : demand;
 
       teams.push(
         computeEfficiency(
@@ -148,12 +200,14 @@ export async function getEfficiencyData(
     const overloaded = teams.filter((t) => t.status === "overload");
     const idle = teams.filter((t) => t.status === "overcapacity");
     const takeaways: string[] = [];
+    const isESG = gameType === "esg";
+    const unitLabel = isESG ? "lotes" : "atendimentos";
 
     if (overloaded.length > 0) {
       const names = overloaded.map((t) => t.team).join(", ");
       const totalLost = overloaded.reduce((s, t) => s + t.unmetDemand, 0);
       takeaways.push(
-        `${names} ${overloaded.length > 1 ? "estão" : "está"} com sobrecarga em ${svc.label} — ${totalLost.toLocaleString("pt-BR")} atendimentos perdidos no trimestre.`
+        `${names} ${overloaded.length > 1 ? "estão" : "está"} com sobrecarga em ${svc.label} — ${totalLost.toLocaleString("pt-BR")} ${unitLabel} perdidos.`
       );
     }
     if (idle.length > 0) {
@@ -192,8 +246,9 @@ export async function getProfitabilityData(
   }
 
   const config = getGameConfig(gameType);
-  const { getTeamVariablesPivot } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.profitability]);
+  const isESG = gameType === "esg";
+  const data = await fetchModuleData(groupId, period, config,
+    config.codes.profitability, config.codes.profitabilityProduct);
 
   const services = config.services.map((svc) => ({
     label: svc.label,
@@ -207,14 +262,32 @@ export async function getProfitabilityData(
     const vars = d as unknown as Record<string, number>;
 
     for (const svc of services) {
-      const totalRevenue = vars[`receita_total_${svc.suffix}`] || 0;
-      const disallowances = vars[`glosa_${svc.suffix}`] || 0;
-      const defaults = vars[`inadimplenciaParticulares${svc.suffix}`] || 0;
-      const netRevenue = vars[`receita_liquida_${svc.suffix}`] || 0;
-      const inputCosts = vars[`custo_insumos_${svc.suffix}`] || vars[`custo_producao_${svc.suffix}`] || vars[`custo_materiaprima_${svc.suffix}`] || 0;
-      const laborCosts = vars[`custo_pessoal_${svc.suffix}`] || 0;
-      const contributionMargin = vars[`margem_contribuicao_${svc.suffix}`] || 0;
-      const marginPercent = vars[`percentual_total_margem_contribuicao_${svc.suffix}`] || vars[`percentual_margem_contribuicao_${svc.suffix}`] || 0;
+      let totalRevenue: number, disallowances: number, defaults: number;
+      let netRevenue: number, inputCosts: number, laborCosts: number;
+      let contributionMargin: number, marginPercent: number;
+
+      if (isESG) {
+        // ESG: per-product via synthetic suffixed keys
+        totalRevenue = vars[`ctaCaixaReceitaVenda_${svc.suffix}`] || 0;
+        disallowances = 0; // ESG doesn't have glosas
+        defaults = 0;
+        netRevenue = totalRevenue; // ESG: net = gross (no disallowances)
+        inputCosts = vars[`outrasInfosMateriaPrima_${svc.suffix}`] || 0;
+        laborCosts = vars[`outrasInfosSalariosEEncargos_${svc.suffix}`] || 0;
+        const cogs = vars[`ctaEstoqueProdutosVendidos_${svc.suffix}`] || 0;
+        contributionMargin = totalRevenue - cogs;
+        marginPercent = totalRevenue > 0 ? (contributionMargin / totalRevenue) * 100 : 0;
+      } else {
+        // Hospital: suffix-encoded codes
+        totalRevenue = vars[`receita_total_${svc.suffix}`] || 0;
+        disallowances = vars[`glosa_${svc.suffix}`] || 0;
+        defaults = vars[`inadimplenciaParticulares${svc.suffix}`] || 0;
+        netRevenue = vars[`receita_liquida_${svc.suffix}`] || 0;
+        inputCosts = vars[`custo_insumos_${svc.suffix}`] || vars[`custo_producao_${svc.suffix}`] || vars[`custo_materiaprima_${svc.suffix}`] || 0;
+        laborCosts = vars[`custo_pessoal_${svc.suffix}`] || 0;
+        contributionMargin = vars[`margem_contribuicao_${svc.suffix}`] || 0;
+        marginPercent = vars[`percentual_total_margem_contribuicao_${svc.suffix}`] || vars[`percentual_margem_contribuicao_${svc.suffix}`] || 0;
+      }
 
       result.push({
         team: d.team_name,
@@ -248,8 +321,13 @@ export async function getBenchmarkingData(
   }
 
   const config = getGameConfig(gameType);
+  const isESG = gameType === "esg";
+
+  // ESG benchmarking codes may have ctaCaixaReceitaVenda which exists both
+  // aggregate (NULL) and per-product, so we need aggregateOnly=true
   const { getTeamVariablesPivot } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.benchmarking]);
+  const data = await getTeamVariablesPivot(groupId, period,
+    [...config.codes.benchmarking], isESG);
 
   const result: BenchmarkData[] = [];
 
@@ -257,29 +335,34 @@ export async function getBenchmarkingData(
     const d = data[teamNum];
     const vars = d as unknown as Record<string, number>;
 
+    // ESG field fallbacks (ESG uses different code names)
+    const sharePrice = vars.valor_acao || vars.outrasInfosPrecoAcao || 0;
+    const netRevenue = vars.receitaLiquidaTotal || vars.ctaCaixaReceitaVenda || 0;
+    const opIncome = vars.resultadoOperacionalLiquido || vars.dreLucroOperacional || 0;
+    const ebitda = vars.resultadoBruto || vars.ebitda || 0;
+    const nwc = vars.capitalCirculanteLiq || vars.capitalCirculanteLiquido || 0;
+    const ranking = vars.colocacaoRankingPeriodo || 0;
+    const opMargin = isESG
+      ? (vars.margemOperacional || (netRevenue > 0 ? (opIncome / netRevenue) * 100 : 0))
+      : (netRevenue > 0 ? (opIncome / netRevenue) * 100 : 0);
+
     result.push({
       team: d.team_name,
       teamNumber: d.team_number,
-      sharePrice: vars.valor_acao || 0,
-      netRevenue: vars.receitaLiquidaTotal || 0,
-      netOperatingIncome: vars.resultadoOperacionalLiquido || 0,
-      operatingMargin:
-        vars.receitaLiquidaTotal > 0
-          ? ((vars.resultadoOperacionalLiquido || 0) / vars.receitaLiquidaTotal) * 100
-          : 0,
-      ebitda: vars.resultadoBruto || 0,
-      ebitdaMargin:
-        vars.receitaLiquidaTotal > 0
-          ? ((vars.resultadoBruto || 0) / vars.receitaLiquidaTotal) * 100
-          : 0,
-      patientsAttended: gameType === "esg"
-        ? (vars.lotesVendidosTotal || 0)
+      sharePrice,
+      netRevenue,
+      netOperatingIncome: opIncome,
+      operatingMargin: opMargin,
+      ebitda,
+      ebitdaMargin: netRevenue > 0 ? (ebitda / netRevenue) * 100 : 0,
+      patientsAttended: isESG
+        ? (vars.totalDeLotesVendidos || 0)
         : (vars.vidasAtendidas || 0),
-      registeredDoctors: gameType === "esg"
+      registeredDoctors: isESG
         ? (vars.governancaCorporativa || 0)
         : (vars.medicosCadastrados || 0),
-      nwc: vars.capitalCirculanteLiq || 0,
-      overallRanking: vars.colocacaoRankingPeriodo || 0,
+      nwc,
+      overallRanking: ranking,
     });
   }
 
@@ -298,10 +381,10 @@ export async function getTimeseriesData(
   }
 
   const config = getGameConfig(gameType);
+  const isESG = gameType === "esg";
   const { getTimeseriesAllPeriods } = await import("./queries");
-  const allData = await getTimeseriesAllPeriods(groupId, maxPeriod, [...config.codes.timeseries]);
+  const allData = await getTimeseriesAllPeriods(groupId, maxPeriod, [...config.codes.timeseries], isESG);
 
-  // Collect team names from any period that has data
   const teamMap = new Map<number, string>();
   for (const periodData of Object.values(allData)) {
     for (const teamNum of Object.keys(periodData).map(Number)) {
@@ -314,10 +397,10 @@ export async function getTimeseriesData(
   const teams = sortedTeamNums.map((n) => teamMap.get(n)!);
 
   const metricDefs = [
-    { key: "sharePrice", label: "Valor da Ação", code: "valor_acao", computed: false },
-    { key: "netRevenue", label: "Receita Líquida", code: "receitaLiquidaTotal", computed: false },
-    { key: "operatingMargin", label: "Margem Operacional (%)", code: null, computed: true },
-    { key: "governance", label: "Governança Corporativa", code: "governancaCorporativa", computed: false },
+    { key: "sharePrice", label: "Valor da Ação", code: "valor_acao", fallback: "outrasInfosPrecoAcao", computed: false },
+    { key: "netRevenue", label: "Receita Líquida", code: "receitaLiquidaTotal", fallback: "ctaCaixaReceitaVenda", computed: false },
+    { key: "operatingMargin", label: "Margem Operacional (%)", code: null, fallback: null, computed: true },
+    { key: "governance", label: "Governança Corporativa", code: "governancaCorporativa", fallback: null, computed: false },
   ];
 
   const metrics: TimeseriesDataset["metrics"] = metricDefs.map((m) => {
@@ -329,12 +412,11 @@ export async function getTimeseriesData(
         const teamName = teamMap.get(teamNum)!;
         const vars = periodData[teamNum] as Record<string, number> | undefined;
         if (m.computed) {
-          // Operating margin = resultadoOperacionalLiquido / receitaLiquidaTotal * 100
-          const opResult = vars?.resultadoOperacionalLiquido || 0;
-          const revenue = vars?.receitaLiquidaTotal || 0;
+          const opResult = vars?.resultadoOperacionalLiquido || vars?.dreLucroOperacional || 0;
+          const revenue = vars?.receitaLiquidaTotal || vars?.ctaCaixaReceitaVenda || 0;
           row[teamName] = revenue > 0 ? (opResult / revenue) * 100 : 0;
         } else {
-          row[teamName] = vars?.[m.code!] || 0;
+          row[teamName] = vars?.[m.code!] || (m.fallback ? (vars?.[m.fallback] || 0) : 0);
         }
       }
       data.push(row);
@@ -370,12 +452,12 @@ export async function getGovernanceData(
       team: d.team_name,
       teamNumber: d.team_number,
       score: vars.governancaCorporativa || 0,
-      creditoRotativo: vars.governancaCorporativa_creditoRotativo || 0,
-      totalDispensa: vars.governancaCorporativa_totalDispensa || vars.governancaCorporativa_demissoes || 0,
-      usoMaoObraExtra: vars.governancaCorporativa_usoMaoOBraExtra || vars.governancaCorporativa_horaExtra || 0,
-      numeroCertificacoes: vars.governancaCorporativa_numeroCertificacoes || vars.governancaCorporativa_certificacoesESG || 0,
-      transparencia: vars.governancaCorporativa_liberouRelatoriosFinanceirosHospitais || vars.governancaCorporativa_relatorios || 0,
-      taxaInfeccao: vars.governancaCorporativa_atratividadeParcial_taxaInfeccao || vars.governancaCorporativa_pluma || 0,
+      creditoRotativo: vars.governancaCorporativa_creditoRotativo || vars.governancaCorporativa_balancoCreditoRotativo || 0,
+      totalDispensa: vars.governancaCorporativa_totalDispensa || 0,
+      usoMaoObraExtra: vars.governancaCorporativa_usoMaoOBraExtra || 0,
+      numeroCertificacoes: vars.governancaCorporativa_numeroCertificacoes || vars.governancaCorporativa_indQuimEsgCertificacaoInternacionalAcumulado || 0,
+      transparencia: vars.governancaCorporativa_liberouRelatoriosFinanceirosHospitais || vars.governancaCorporativa_liberouRelatoriosFinanceiros || 0,
+      taxaInfeccao: vars.governancaCorporativa_atratividadeParcial_taxaInfeccao || vars.governancaCorporativa_ambPlumaAtual || 0,
     };
     result.push(govData);
   }
@@ -395,8 +477,10 @@ export async function getFinancialRiskData(
   }
 
   const config = getGameConfig(gameType);
+  const isESG = gameType === "esg";
   const { getTeamVariablesPivot } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.financialRisk]);
+  const data = await getTeamVariablesPivot(groupId, period,
+    [...config.codes.financialRisk], isESG);
 
   const result: FinancialRiskData[] = [];
 
@@ -404,14 +488,15 @@ export async function getFinancialRiskData(
     const d = data[teamNum];
     const vars = d as unknown as Record<string, number>;
 
-    const saldoFinal = vars.saldoFinal || 0;
-    const saldoInicialTrimestre = vars.saldoInicialTrimestre || vars.saldoInicialMes || 0;
-    const capitalCirculanteLiq = vars.capitalCirculanteLiq || 0;
+    const saldoFinal = vars.saldoFinal || vars.ctaCaixaSaldoFinal || 0;
+    const saldoInicialTrimestre = vars.saldoInicialTrimestre || vars.saldoInicialMes || vars.ctaCaixaSaldoInicial || 0;
+    const capitalCirculanteLiq = vars.capitalCirculanteLiq || vars.capitalCirculanteLiquido || 0;
     const patrimonioLiquido = vars.patrimonioLiquido || 0;
-    const totalPassivo = vars.totalPassivo || 0;
-    const creditoRotativo = vars.creditoRotativo || 0;
+    const totalPassivo = vars.totalPassivo || vars.balancoPassivoTotal || 0;
+    const totalAtivo = vars.totalAtivo || vars.balancoAtivoTotal || 0;
+    const creditoRotativo = vars.creditoRotativo || vars.balancoCreditoRotativo || 0;
     const planoEmergencial = vars.planoEmergencial || 0;
-    const receitaLiquidaTotal = vars.receitaLiquidaTotal || 0;
+    const receitaLiquidaTotal = vars.receitaLiquidaTotal || vars.ctaCaixaReceitaVenda || 0;
 
     const alavancagem = patrimonioLiquido !== 0 ? totalPassivo / patrimonioLiquido : 0;
     const coberturaCaixa = receitaLiquidaTotal > 0 ? (saldoFinal / receitaLiquidaTotal) * 100 : 0;
@@ -431,14 +516,14 @@ export async function getFinancialRiskData(
       saldoInicialTrimestre,
       capitalCirculanteLiq,
       patrimonioLiquido,
-      totalAtivo: vars.totalAtivo || 0,
+      totalAtivo,
       totalPassivo,
       creditoRotativo,
       utilizacaoCreditoRotativo: vars.utilizacaoCreditoRotativo || 0,
-      taxaRotativo: vars.hospitalPercentualCreditoRotativo || vars.percentualCreditoRotativo || 0,
-      despesaCreditoRotativo: vars.despesaCreditoRotativo || 0,
-      despesaEmprestimo: vars.despesa_emprestimo || 0,
-      taxaJurosEmprestimo: vars.taxa_juros_emprestimo || 0,
+      taxaRotativo: vars.hospitalPercentualCreditoRotativo || vars.percentualCreditoRotativo || vars.outrasInfosTaxaCreditoRotativo || 0,
+      despesaCreditoRotativo: vars.despesaCreditoRotativo || vars.ctaCaixaPagamentoCreditoRotativo || 0,
+      despesaEmprestimo: vars.despesa_emprestimo || vars.ctaCaixaPagamentoEmprestimo || 0,
+      taxaJurosEmprestimo: vars.taxa_juros_emprestimo || vars.outrasInfosTaxaJurosEmprestimos || 0,
       planoEmergencial,
       receitaLiquidaTotal,
       alavancagem,
@@ -463,19 +548,18 @@ export async function getStrategyAlignmentData(
   }
 
   const config = getGameConfig(gameType);
+  const isESG = gameType === "esg";
   const STRATEGY_ITEMS = config.strategyItems;
   const { getTeamVariablesPivot, getStrategyWeights } = await import("./queries");
 
-  // Fetch weights and results in parallel
   const [weightsData, resultsData] = await Promise.all([
     getStrategyWeights(groupId),
-    getTeamVariablesPivot(groupId, period, [...config.codes.strategyResults]),
+    getTeamVariablesPivot(groupId, period, [...config.codes.strategyResults], isESG),
   ]);
 
   const teamNums = Object.keys(resultsData).map(Number).sort();
   const totalTeams = teamNums.length;
 
-  // Compute rankings per variable code (higher = better, rank 1 = best)
   const rankings: Record<string, Record<number, number>> = {};
   for (const item of STRATEGY_ITEMS) {
     const values = teamNums.map((tn) => ({
@@ -501,7 +585,6 @@ export async function getStrategyAlignmentData(
     let weightedCount = 0;
 
     for (const item of STRATEGY_ITEMS) {
-      // Find weight from DB — match by variable_code or item_name
       let weight = 0;
       if (teamWeights) {
         for (const w of Object.values(teamWeights.weights)) {
@@ -515,7 +598,7 @@ export async function getStrategyAlignmentData(
       const value = vars[item.code] || 0;
       const ranking = rankings[item.code]?.[teamNum] || totalTeams;
       const topHalf = ranking <= Math.ceil(totalTeams / 2);
-      const aligned = weight >= 2 ? topHalf : true; // low weight = not penalized
+      const aligned = weight >= 2 ? topHalf : true;
 
       if (weight > 0) {
         weightedCount++;
@@ -557,11 +640,13 @@ export async function getPricingData(
   if (useMock()) return [];
 
   const config = getGameConfig(gameType);
-  const { getTeamVariablesPivot, getTeamDecisions } = await import("./queries");
+  const isESG = gameType === "esg";
 
   const [decisions, results] = await Promise.all([
-    getTeamDecisions(groupId, period, [...config.codes.pricingDecisions]),
-    getTeamVariablesPivot(groupId, period, [...config.codes.pricingResults]),
+    fetchModuleDecisions(groupId, period, config,
+      config.codes.pricingDecisions, config.codes.pricingDecisionsProduct),
+    fetchModuleData(groupId, period, config,
+      config.codes.pricingResults, config.codes.pricingResultsProduct),
   ]);
 
   const teamNums = new Set([
@@ -572,8 +657,7 @@ export async function getPricingData(
 
   const result: PricingTeamData[] = [];
 
-  if (gameType === "esg") {
-    // ESG: product-based pricing (P1=Shampoo, P2=Repelente, P3=Selante)
+  if (isESG) {
     for (const teamNum of sortedNums) {
       const dec = decisions[teamNum] as Record<string, unknown> | undefined;
       const res = results[teamNum] as Record<string, unknown> | undefined;
@@ -594,16 +678,15 @@ export async function getPricingData(
         marketSharePA: Number(res?.marketShare_p1 || 0),
         marketShareINT: Number(res?.marketShare_p2 || 0),
         marketShareAC: Number(res?.marketShare_p3 || 0),
-        mediaPA: Number(res?.medias_p1 || 0),
-        mediaINT: Number(res?.medias_p2 || 0),
-        mediaAC: Number(res?.medias_p3 || 0),
+        mediaPA: 0,
+        mediaINT: 0,
+        mediaAC: 0,
         conveniosAceitos: {},
         revenueByConvenio: {},
         attractivenessByConvenio: {},
       });
     }
   } else {
-    // Hospital: convenio-based pricing
     const CONVENIOS = config.convenios || [];
     const SERVICES_PRICING = config.servicesPricing || [];
 
@@ -667,7 +750,6 @@ export async function getQualityData(
 ): Promise<QualityData[]> {
   if (useMock()) return [];
 
-  // ESG doesn't have quality module (replaced by environmental)
   const config = getGameConfig(gameType);
   if (config.codes.quality.length === 0) return [];
 
@@ -727,8 +809,9 @@ export async function getLostRevenueData(
   if (useMock()) return [];
 
   const config = getGameConfig(gameType);
-  const { getTeamVariablesPivot } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.lostRevenue]);
+  const isESG = gameType === "esg";
+  const data = await fetchModuleData(groupId, period, config,
+    config.codes.lostRevenue, config.codes.lostRevenueProduct);
 
   const services = config.services.map((svc) => ({
     label: svc.label,
@@ -746,14 +829,25 @@ export async function getLostRevenueData(
     let totalLost = 0;
 
     for (const svc of services) {
-      const attended = vars[`atendimentos_${svc.suffix}`] || vars[`lotesVendidos_${svc.suffix}`] || 0;
-      const netRevenue = vars[`receita_liquida_${svc.suffix}`] || 0;
+      let attended: number, netRevenue: number, lostVolume: number;
+
+      if (isESG) {
+        attended = vars[`ctaEstoqueUnidadesProdutosVendidos_${svc.suffix}`] || 0;
+        netRevenue = vars[`ctaCaixaReceitaVenda_${svc.suffix}`] || 0;
+        lostVolume = vars[`ctaEstoqueUnidadesVendasPerdidas_${svc.suffix}`] || 0;
+      } else {
+        attended = vars[`atendimentos_${svc.suffix}`] || 0;
+        netRevenue = vars[`receita_liquida_${svc.suffix}`] || 0;
+        lostVolume = vars[`atendimentosPerdidos${svc.suffix}`] || 0;
+      }
+
       const revenuePerUnit = attended > 0 ? netRevenue / attended : 0;
-      const lostVolume = vars[`atendimentosPerdidos${svc.suffix}`] || vars[`vendasPerdidas_${svc.suffix}`] || 0;
       const lostRevenue = lostVolume * revenuePerUnit;
 
       const idleness = svc.hasIdleness ? (vars[`ociosidade_${svc.suffix}`] || 0) : 0;
-      const margin = vars[`margem_contribuicao_${svc.suffix}`] || 0;
+      const margin = isESG
+        ? (netRevenue - (vars[`ctaEstoqueProdutosVendidos_${svc.suffix}`] || 0))
+        : (vars[`margem_contribuicao_${svc.suffix}`] || 0);
       const marginPerUnit = attended > 0 ? margin / attended : 0;
       const idlenessRevenue = idleness * marginPerUnit;
 
@@ -774,10 +868,9 @@ export async function getLostRevenueData(
       totalLost += lostRevenue + idlenessRevenue;
     }
 
-    const totalNetRevenue = services.reduce(
-      (s, svc) => s + (vars[`receita_liquida_${svc.suffix}`] || 0),
-      0
-    );
+    const totalNetRevenue = isESG
+      ? services.reduce((s, svc) => s + (vars[`ctaCaixaReceitaVenda_${svc.suffix}`] || 0), 0)
+      : services.reduce((s, svc) => s + (vars[`receita_liquida_${svc.suffix}`] || 0), 0);
     const pctRevenueLost = totalNetRevenue > 0 ? (totalLost / totalNetRevenue) * 100 : 0;
 
     const overloadTotal = svcData.reduce((s, sv) => s + sv.lostRevenue, 0);
@@ -835,31 +928,33 @@ export async function getEnvironmentalData(
     const d = data[teamNum];
     const vars = d as unknown as Record<string, number>;
 
-    const multaAmbiental = vars.multaAmbiental || 0;
-    const nivelPluma = vars.nivelPluma || 0;
-    const certificacaoESG = vars.certificacaoESG || 0;
+    // Real ESG DB codes
+    const multaAmbiental = vars.ambMultaAmbiental || 0;
+    const nivelPluma = vars.ambPlumaAtual || 0;
+    const certificacaoESG = vars.indQuimEsgCertificacaoInternacional || 0;
+    const certAcumulado = vars.indQuimEsgCertificacaoInternacionalAcumulado || 0;
 
     let envStatus: "excellent" | "adequate" | "critical" = "adequate";
     if (multaAmbiental > 0 || nivelPluma > 3) {
       envStatus = "critical";
-    } else if (certificacaoESG > 0 && multaAmbiental === 0) {
+    } else if (certAcumulado > 0 && multaAmbiental === 0) {
       envStatus = "excellent";
     }
 
     result.push({
       team: d.team_name,
       teamNumber: d.team_number,
-      pluma: vars.pluma || 0,
+      pluma: nivelPluma,
       nivelPluma,
-      smsAmbiental: vars.smsAmbiental || 0,
+      smsAmbiental: vars.ambInvestSmsAcumulado || vars.mediaInvestSms || 0,
       multaAmbiental,
-      remediacao: vars.remediacao || 0,
-      investimentoRemediacao: vars.investimentoRemediacao || 0,
+      remediacao: vars.ambRemediacaoTerreno || 0,
+      investimentoRemediacao: vars.ambRemediacaoTerreno || 0,
       certificacaoESG,
-      numeroCertificacoesESG: vars.numeroCertificacoesESG || 0,
-      investimentoCertificacaoESG: vars.investimentoCertificacaoESG || 0,
-      investimentoAcumuladoCertificacaoESG: vars.investimentoAcumuladoCertificacaoESG || 0,
-      gastoDescarte: vars.gastoDescarte || 0,
+      numeroCertificacoesESG: certAcumulado,
+      investimentoCertificacaoESG: vars.indQuimEsgInvestimentoCertificacaoInternacionalAcumulado || 0,
+      investimentoAcumuladoCertificacaoESG: vars.indQuimEsgInvestimentoCertificacaoInternacionalAcumulado || 0,
+      gastoDescarte: 0,
       envStatus,
     });
   }
@@ -894,27 +989,28 @@ export async function getInventoryData(
   const config = getGameConfig(gameType);
   if (!config.codes.inventory || config.codes.inventory.length === 0) return [];
 
-  const { getTeamVariablesPivot } = await import("./queries");
-  const data = await getTeamVariablesPivot(groupId, period, [...config.codes.inventory]);
+  const data = await fetchModuleData(groupId, period, config,
+    config.codes.inventory, config.codes.inventoryProduct);
 
   const result: InventoryData[] = [];
 
   for (const teamNum of Object.keys(data).map(Number).sort()) {
     const d = data[teamNum];
     const vars = d as unknown as Record<string, number>;
+    const totalCapacity = vars.outrasInfosCapacidadeFabrica || 0;
 
     const products = config.products.map((prod) => {
-      const producao = vars[`producao_${prod.suffix}`] || 0;
-      const capacidade = vars[`capacidadeProdutiva_${prod.suffix}`] || 0;
+      const producao = vars[`ctaEstoqueUnidadesProdutosProduzidos_${prod.suffix}`] || 0;
+      const capacityUsed = vars[`outrasInfosUsoCapacidadeFabril_${prod.suffix}`] || 0;
       return {
         name: prod.name,
         suffix: prod.suffix,
-        estoque: vars[`estoque_${prod.suffix}`] || 0,
-        custoUnitario: vars[`custoUnitario_${prod.suffix}`] || 0,
-        custoArmazenagem: vars[`custoArmazenagem_${prod.suffix}`] || 0,
+        estoque: vars[`ctaEstoqueUnidadesEstoqueFinal_${prod.suffix}`] || 0,
+        custoUnitario: vars[`outrasInfosCustoMedioUnitario_${prod.suffix}`] || 0,
+        custoArmazenagem: vars[`ctaEstoqueEstoqueFinal_${prod.suffix}`] || 0,
         producao,
-        capacidadeProdutiva: capacidade,
-        utilizacao: capacidade > 0 ? (producao / capacidade) * 100 : 0,
+        capacidadeProdutiva: capacityUsed,
+        utilizacao: totalCapacity > 0 ? (capacityUsed / totalCapacity) * 100 : 0,
       };
     });
 

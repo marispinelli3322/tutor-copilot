@@ -115,14 +115,23 @@ interface RawVariable {
  * Fetch specific variable codes for all teams in a group/period.
  * Returns a map: teamNumber -> { codigo: valor, ... }
  */
+export type TeamPivot = Record<number, Record<string, number> & { team_name: string; team_number: number }>;
+
+/**
+ * Fetch aggregate variable codes (produto_id IS NULL) for all teams.
+ * When aggregateOnly=true, filters out per-product rows (needed for ESG
+ * where codes like ctaCaixaReceitaVenda exist both aggregate and per-product).
+ */
 export async function getTeamVariablesPivot(
   groupId: number,
   period: number,
-  codes: string[]
-): Promise<Record<number, Record<string, number> & { team_name: string; team_number: number }>> {
+  codes: string[],
+  aggregateOnly = false
+): Promise<TeamPivot> {
   if (codes.length === 0) return {};
 
   const placeholders = codes.map(() => "?").join(",");
+  const nullFilter = aggregateOnly ? "AND ve.produto_id IS NULL" : "";
   const rows = await query<RawVariable>(
     `SELECT ve.empresa_id, e.nome as team_name, e.numero as team_number,
             ve.codigo, ve.valor
@@ -131,11 +140,12 @@ export async function getTeamVariablesPivot(
      WHERE e.grupo_id = ?
        AND ve.periodo = ?
        AND ve.codigo IN (${placeholders})
+       ${nullFilter}
      ORDER BY e.numero, ve.codigo`,
     [groupId, period, ...codes]
   );
 
-  const result: Record<number, Record<string, number> & { team_name: string; team_number: number }> = {};
+  const result: TeamPivot = {};
   for (const row of rows) {
     if (!result[row.team_number]) {
       result[row.team_number] = {
@@ -144,6 +154,67 @@ export async function getTeamVariablesPivot(
       } as Record<string, number> & { team_name: string; team_number: number };
     }
     (result[row.team_number] as Record<string, unknown>)[row.codigo] = Number(row.valor);
+  }
+  return result;
+}
+
+/**
+ * Fetch per-product variable codes. Produces synthetic suffixed keys:
+ * e.g., "fdPreco" with produto_id=130 → "fdPreco_p1"
+ * productMap: { 130: "p1", 131: "p2", 132: "p3" }
+ */
+export async function getTeamVariablesPivotByProduct(
+  groupId: number,
+  period: number,
+  codes: string[],
+  productMap: Record<number, string>
+): Promise<TeamPivot> {
+  if (codes.length === 0) return {};
+
+  const productIds = Object.keys(productMap).map(Number);
+  const codePlaceholders = codes.map(() => "?").join(",");
+  const prodPlaceholders = productIds.map(() => "?").join(",");
+
+  const rows = await query<RawVariable & { produto_id: number }>(
+    `SELECT ve.empresa_id, e.nome as team_name, e.numero as team_number,
+            ve.codigo, ve.valor, ve.produto_id
+     FROM variavel_empresarial ve
+     JOIN empresa e ON ve.empresa_id = e.id
+     WHERE e.grupo_id = ?
+       AND ve.periodo = ?
+       AND ve.codigo IN (${codePlaceholders})
+       AND ve.produto_id IN (${prodPlaceholders})
+     ORDER BY e.numero, ve.codigo, ve.produto_id`,
+    [groupId, period, ...codes, ...productIds]
+  );
+
+  const result: TeamPivot = {};
+  for (const row of rows) {
+    if (!result[row.team_number]) {
+      result[row.team_number] = {
+        team_name: row.team_name,
+        team_number: row.team_number,
+      } as Record<string, number> & { team_name: string; team_number: number };
+    }
+    const suffix = productMap[row.produto_id];
+    if (suffix) {
+      (result[row.team_number] as Record<string, unknown>)[`${row.codigo}_${suffix}`] = Number(row.valor);
+    }
+  }
+  return result;
+}
+
+/**
+ * Merge two TeamPivot results (aggregate + per-product) into one.
+ */
+export function mergeTeamPivots(agg: TeamPivot, prod: TeamPivot): TeamPivot {
+  const result: TeamPivot = { ...agg };
+  for (const teamNum of Object.keys(prod).map(Number)) {
+    if (!result[teamNum]) {
+      result[teamNum] = prod[teamNum];
+    } else {
+      Object.assign(result[teamNum], prod[teamNum]);
+    }
   }
   return result;
 }
@@ -383,11 +454,13 @@ interface RawDecision {
 export async function getTeamDecisions(
   groupId: number,
   period: number,
-  codes: string[]
-): Promise<Record<number, Record<string, number> & { team_name: string; team_number: number }>> {
+  codes: string[],
+  aggregateOnly = false
+): Promise<TeamPivot> {
   if (codes.length === 0) return {};
 
   const placeholders = codes.map(() => "?").join(",");
+  const nullFilter = aggregateOnly ? "AND id.produto_id IS NULL" : "";
   const rows = await query<RawDecision>(
     `SELECT e.numero as team_number, e.nome as team_name, id.codigo, id.valor
      FROM item_decisao id
@@ -396,11 +469,12 @@ export async function getTeamDecisions(
      WHERE e.grupo_id = ?
        AND id.periodo = ?
        AND id.codigo IN (${placeholders})
+       ${nullFilter}
      ORDER BY e.numero, id.codigo`,
     [groupId, period, ...codes]
   );
 
-  const result: Record<number, Record<string, number> & { team_name: string; team_number: number }> = {};
+  const result: TeamPivot = {};
   for (const row of rows) {
     if (!result[row.team_number]) {
       result[row.team_number] = {
@@ -409,6 +483,50 @@ export async function getTeamDecisions(
       } as Record<string, number> & { team_name: string; team_number: number };
     }
     (result[row.team_number] as Record<string, unknown>)[row.codigo] = Number(row.valor);
+  }
+  return result;
+}
+
+/**
+ * Fetch per-product decision codes with synthetic suffixed keys.
+ */
+export async function getTeamDecisionsByProduct(
+  groupId: number,
+  period: number,
+  codes: string[],
+  productMap: Record<number, string>
+): Promise<TeamPivot> {
+  if (codes.length === 0) return {};
+
+  const productIds = Object.keys(productMap).map(Number);
+  const codePlaceholders = codes.map(() => "?").join(",");
+  const prodPlaceholders = productIds.map(() => "?").join(",");
+
+  const rows = await query<RawDecision & { produto_id: number }>(
+    `SELECT e.numero as team_number, e.nome as team_name, id.codigo, id.valor, id.produto_id
+     FROM item_decisao id
+     JOIN decisao d ON id.decisao_id = d.id
+     JOIN empresa e ON d.empresa_id = e.id
+     WHERE e.grupo_id = ?
+       AND id.periodo = ?
+       AND id.codigo IN (${codePlaceholders})
+       AND id.produto_id IN (${prodPlaceholders})
+     ORDER BY e.numero, id.codigo, id.produto_id`,
+    [groupId, period, ...codes, ...productIds]
+  );
+
+  const result: TeamPivot = {};
+  for (const row of rows) {
+    if (!result[row.team_number]) {
+      result[row.team_number] = {
+        team_name: row.team_name,
+        team_number: row.team_number,
+      } as Record<string, number> & { team_name: string; team_number: number };
+    }
+    const suffix = productMap[row.produto_id];
+    if (suffix) {
+      (result[row.team_number] as Record<string, unknown>)[`${row.codigo}_${suffix}`] = Number(row.valor);
+    }
   }
   return result;
 }
@@ -470,13 +588,15 @@ export async function getStrategyWeights(
 export async function getTimeseriesAllPeriods(
   groupId: number,
   maxPeriod: number,
-  codes: string[]
+  codes: string[],
+  aggregateOnly = false
 ): Promise<Record<number, Record<number, Record<string, number> & { team_name: string; team_number: number }>>> {
   if (codes.length === 0 || maxPeriod < 1) return {};
 
   const placeholders = codes.map(() => "?").join(",");
   const periodPlaceholders = Array.from({ length: maxPeriod }, () => "?").join(",");
   const periods = Array.from({ length: maxPeriod }, (_, i) => i + 1);
+  const nullFilter = aggregateOnly ? "AND ve.produto_id IS NULL" : "";
 
   const rows = await query<RawVariable & { periodo: number }>(
     `SELECT ve.empresa_id, e.nome as team_name, e.numero as team_number,
@@ -486,6 +606,7 @@ export async function getTimeseriesAllPeriods(
      WHERE e.grupo_id = ?
        AND ve.periodo IN (${periodPlaceholders})
        AND ve.codigo IN (${placeholders})
+       ${nullFilter}
      ORDER BY ve.periodo, e.numero, ve.codigo`,
     [groupId, ...periods, ...codes]
   );
