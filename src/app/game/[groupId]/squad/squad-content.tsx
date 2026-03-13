@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { ArrowLeft, CalendarDays, RotateCcw, Play, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, RotateCcw, Play, Users, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatWindow } from "@/components/squad/chat-window";
 import { ChatInput } from "@/components/squad/chat-input";
@@ -13,6 +13,7 @@ import {
   getConversationDates,
   getMessagesForDate,
   formatDateLabel,
+  clearConversations,
 } from "@/lib/squad/storage";
 import Link from "next/link";
 
@@ -241,16 +242,35 @@ export function SquadContent({ groupId, gameCode, period, professor, teamCount }
 
           <div className="ml-auto flex items-center gap-2">
             {!isViewingHistory && !isStreaming && messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={runAnalysis}
-                className="text-xs text-gray-400 hover:text-[#C5A832] gap-1 h-8"
-                title="Refazer análise"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Refazer
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={runAnalysis}
+                  className="text-xs text-gray-400 hover:text-[#C5A832] gap-1 h-8"
+                  title="Refazer análise"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Refazer
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (confirm("Limpar todas as conversas deste jogo?")) {
+                      clearConversations(groupId);
+                      setMessages([]);
+                      setHistoryDates([]);
+                      setActiveDate(getTodayKey());
+                    }
+                  }}
+                  className="text-xs text-gray-400 hover:text-red-500 gap-1 h-8"
+                  title="Limpar conversas"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Limpar
+                </Button>
+              </>
             )}
 
             {isViewingHistory && (

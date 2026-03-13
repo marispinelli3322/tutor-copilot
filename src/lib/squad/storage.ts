@@ -58,6 +58,15 @@ export function getMessagesForDate(groupId: string, date: string): SquadMessage[
   return data[`${groupId}_${date}`]?.messages || [];
 }
 
+export function clearConversations(groupId: string) {
+  const data = getStorageData();
+  const prefix = `${groupId}_`;
+  for (const key of Object.keys(data)) {
+    if (key.startsWith(prefix)) delete data[key];
+  }
+  saveStorageData(data);
+}
+
 export function formatDateLabel(dateStr: string): string {
   const today = getTodayKey();
   if (dateStr === today) return "Hoje";
