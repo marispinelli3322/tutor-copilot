@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen, ArrowLeft, ArrowRight, Users, GraduationCap, Sparkles } from "lucide-react";
+import { Activity, DollarSign, BarChart3, MessageSquare, TrendingUp, Shield, AlertTriangle, Target, Tag, HeartPulse, CircleDollarSign, BookOpen, ArrowLeft, ArrowRight, Users, GraduationCap, Sparkles, MessagesSquare } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/lib/use-locale";
@@ -84,25 +84,43 @@ export function DashboardContent({ groupId, game, teams }: Props) {
         </p>
       </div>
 
-      {/* Hero: Guia de Facilitação */}
+      {/* Hero cards: Facilitation + Squad */}
       <div className="mb-10">
         <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#C5A832]">{t.startHere}</p>
-        <Link href={`/game/${groupId}/facilitation${periodQuery}`}>
-          <Card className="border-[#C5A832] bg-gradient-to-r from-[#1A365D] to-[#234681] transition-all hover:shadow-lg">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#C5A832]/20">
-                  <Sparkles className="h-7 w-7 text-[#C5A832]" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link href={`/game/${groupId}/facilitation${periodQuery}`}>
+            <Card className="border-[#C5A832] bg-gradient-to-r from-[#1A365D] to-[#234681] transition-all hover:shadow-lg h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#C5A832]/20">
+                    <Sparkles className="h-7 w-7 text-[#C5A832]" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-xl text-white">{t.modFacilitation}</CardTitle>
+                    <CardDescription className="mt-1 text-white/70">{t.facilitationHeroDesc}</CardDescription>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-[#C5A832]" />
                 </div>
-                <div className="flex-1">
-                  <CardTitle className="text-xl text-white">{t.modFacilitation}</CardTitle>
-                  <CardDescription className="mt-1 text-white/70">{t.facilitationHeroDesc}</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+          <Link href={`/game/${groupId}/squad`}>
+            <Card className="border-[#C5A832] bg-gradient-to-r from-[#234681] to-[#1A365D] transition-all hover:shadow-lg h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#C5A832]/20">
+                    <MessagesSquare className="h-7 w-7 text-[#C5A832]" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-xl text-white">{t.modSquad}</CardTitle>
+                    <CardDescription className="mt-1 text-white/70">{t.squadHeroDesc}</CardDescription>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-[#C5A832]" />
                 </div>
-                <ArrowRight className="h-5 w-5 text-[#C5A832]" />
-              </div>
-            </CardHeader>
-          </Card>
-        </Link>
+              </CardHeader>
+            </Card>
+          </Link>
+        </div>
       </div>
 
       {/* Analysis modules grid */}

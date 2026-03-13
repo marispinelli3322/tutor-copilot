@@ -275,6 +275,8 @@ const translations = {
     startHere: "Comece por aqui",
     openGuide: "Abrir Guia",
     facilitationHeroDesc: "Perguntas e insights gerados por IA para conduzir a discussão com as equipes neste trimestre.",
+    modSquad: "Simulation Squad",
+    squadHeroDesc: "Converse com o time de especialistas virtuais para analisar o jogo em profundidade.",
     viewGlossary: "Ver Glossário de Indicadores",
 
     // Resumo Executivo
@@ -561,6 +563,8 @@ const translations = {
     startHere: "Start here",
     openGuide: "Open Guide",
     facilitationHeroDesc: "AI-generated questions and insights to lead the discussion with teams this quarter.",
+    modSquad: "Simulation Squad",
+    squadHeroDesc: "Chat with virtual specialist team to analyze the game in depth.",
     viewGlossary: "View Indicator Glossary",
 
     // Executive Summary
