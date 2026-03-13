@@ -3,7 +3,7 @@ import { getGameDetails, getQualityData } from "@/lib/data-provider";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { QualityContent } from "./quality-content";
-import { detectGameType } from "@/lib/game-config";
+import { detectGameType, getGameConfig } from "@/lib/game-config";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +25,7 @@ export default async function QualityPage({ params, searchParams }: PageProps) {
   const gameType = detectGameType(game.jogo_nome);
   if (gameType !== "hospital") return notFound();
 
+  const config = getGameConfig(gameType);
   const period = periodStr ? parseInt(periodStr, 10) : game.ultimo_periodo_processado;
   const qualityData = await getQualityData(gid, period, gameType);
 
@@ -37,6 +38,8 @@ export default async function QualityPage({ params, searchParams }: PageProps) {
         period={period}
         maxPeriod={game.ultimo_periodo_processado}
         qualityData={qualityData}
+        periodLabel={config.periodLabel}
+        periodLabelShort={config.periodLabelShort}
       />
     </div>
   );

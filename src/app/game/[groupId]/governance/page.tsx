@@ -1,6 +1,6 @@
 import { Header } from "@/components/header";
 import { getGameDetails, getGovernanceData } from "@/lib/data-provider";
-import { detectGameType } from "@/lib/game-config";
+import { detectGameType, getGameConfig } from "@/lib/game-config";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { GovernanceContent } from "./governance-content";
@@ -23,6 +23,7 @@ export default async function GovernancePage({ params, searchParams }: PageProps
   if (!game) return notFound();
   const gameType = detectGameType(game.jogo_nome);
 
+  const config = getGameConfig(gameType);
   const period = periodStr ? parseInt(periodStr, 10) : game.ultimo_periodo_processado;
   const govData = await getGovernanceData(gid, period, gameType);
 
@@ -35,6 +36,8 @@ export default async function GovernancePage({ params, searchParams }: PageProps
         period={period}
         maxPeriod={game.ultimo_periodo_processado}
         govData={govData}
+        periodLabel={config.periodLabel}
+        periodLabelShort={config.periodLabelShort}
       />
     </div>
   );

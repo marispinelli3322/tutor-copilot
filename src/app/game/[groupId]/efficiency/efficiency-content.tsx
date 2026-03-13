@@ -15,23 +15,20 @@ interface Props {
   period: number;
   maxPeriod: number;
   efficiency: Record<string, ServiceEfficiencyReport>;
+  periodLabel: string;
+  periodLabelShort: string;
+  serviceKeys: string[];
+  serviceNames: Record<string, string>;
 }
 
 function formatNumber(n: number): string {
   return new Intl.NumberFormat("pt-BR").format(Math.round(n));
 }
 
-export function EfficiencyContent({ groupId, gameCode, period, maxPeriod, efficiency }: Props) {
+export function EfficiencyContent({ groupId, gameCode, period, maxPeriod, efficiency, periodLabel, periodLabelShort, serviceKeys, serviceNames: svcNames }: Props) {
   const { locale, t } = useLocale();
-  const serviceKeys = ["emergency", "inpatient", "surgery"];
   const hasData = serviceKeys.some((k) => efficiency[k]?.teams?.length > 0);
   const periods = Array.from({ length: maxPeriod }, (_, i) => i + 1);
-
-  const svcNames: Record<string, string> = {
-    emergency: t.svcEmergency,
-    inpatient: t.svcInpatient,
-    surgery: t.svcSurgery,
-  };
 
   function getStatusBadge(row: ServiceEfficiency) {
     if (row.status === "overload")
@@ -87,18 +84,18 @@ export function EfficiencyContent({ groupId, gameCode, period, maxPeriod, effici
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight text-[#1A365D]">{t.efficiencyTitle}</h1>
-          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{t.quarter} {period}</Badge>
+          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{periodLabel} {period}</Badge>
         </div>
         <p className="mt-2 text-[#64748B]">{t.efficiencySubtitle(gameCode)}</p>
       </div>
 
       <div className="mb-8 flex items-center gap-2">
-        <span className="text-sm font-medium text-[#64748B]">{t.periodLabel}:</span>
+        <span className="text-sm font-medium text-[#64748B]">{periodLabel}:</span>
         <div className="flex gap-1">
           {periods.map((p) => (
             <Link key={p} href={`/game/${groupId}/efficiency?period=${p}`}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${p === period ? "bg-[#1A365D] text-white" : "bg-white text-[#64748B] hover:bg-[#1A365D]/10 hover:text-[#1A365D]"}`}>
-              T{p}
+              {periodLabelShort}{p}
             </Link>
           ))}
         </div>

@@ -15,6 +15,8 @@ interface Props {
   period: number;
   maxPeriod: number;
   lostRevenueData: LostRevenueData[];
+  periodLabel: string;
+  periodLabelShort: string;
 }
 
 function typeBadge(type: "overload" | "idleness" | "balanced", labels: { overload: string; idleness: string; balanced: string }) {
@@ -33,7 +35,7 @@ function fmtCurrency(n: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "decimal", maximumFractionDigits: 0 }).format(n);
 }
 
-export function LostRevenueContent({ groupId, gameCode, period, maxPeriod, lostRevenueData }: Props) {
+export function LostRevenueContent({ groupId, gameCode, period, maxPeriod, lostRevenueData, periodLabel, periodLabelShort }: Props) {
   const { t } = useLocale();
   const periods = Array.from({ length: maxPeriod }, (_, i) => i + 1);
 
@@ -54,18 +56,18 @@ export function LostRevenueContent({ groupId, gameCode, period, maxPeriod, lostR
         <div className="flex items-center gap-3">
           <CircleDollarSign className="h-7 w-7 text-[#1A365D]" />
           <h1 className="text-3xl font-bold tracking-tight text-[#1A365D]">{t.lostRevenueTitle}</h1>
-          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{t.quarter} {period}</Badge>
+          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{periodLabel} {period}</Badge>
         </div>
         <p className="mt-2 text-[#64748B]">{t.lostRevenueSubtitle(gameCode)}</p>
       </div>
 
       <div className="mb-8 flex items-center gap-2">
-        <span className="text-sm font-medium text-[#64748B]">{t.periodLabel}:</span>
+        <span className="text-sm font-medium text-[#64748B]">{periodLabel}:</span>
         <div className="flex gap-1">
           {periods.map((p) => (
             <Link key={p} href={`/game/${groupId}/lost-revenue?period=${p}`}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${p === period ? "bg-[#1A365D] text-white" : "bg-white text-[#64748B] hover:bg-[#1A365D]/10 hover:text-[#1A365D]"}`}>
-              T{p}
+              {periodLabelShort}{p}
             </Link>
           ))}
         </div>
@@ -106,7 +108,7 @@ export function LostRevenueContent({ groupId, gameCode, period, maxPeriod, lostR
           {/* Main lost revenue table */}
           <Card className="overflow-hidden">
             <CardHeader className="bg-[#1A365D] py-3">
-              <CardTitle className="text-base text-white">{t.lostRevenueTitle} — {t.quarter} {period}</CardTitle>
+              <CardTitle className="text-base text-white">{t.lostRevenueTitle} — {periodLabel} {period}</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto p-0">
               <Table>

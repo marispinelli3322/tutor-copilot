@@ -15,6 +15,8 @@ interface Props {
   period: number;
   maxPeriod: number;
   benchData: BenchmarkData[];
+  periodLabel: string;
+  periodLabelShort: string;
 }
 
 function formatCurrency(n: number, locale: string): string {
@@ -38,7 +40,7 @@ function rankBadge(rank: number) {
   return <Badge variant="outline" className="text-[#64748B]">{rank}o</Badge>;
 }
 
-export function BenchmarkingContent({ groupId, gameCode, period, maxPeriod, benchData }: Props) {
+export function BenchmarkingContent({ groupId, gameCode, period, maxPeriod, benchData, periodLabel, periodLabelShort }: Props) {
   const { locale, t } = useLocale();
   const periods = Array.from({ length: maxPeriod }, (_, i) => i + 1);
   const currencyPrefix = locale === "en" ? "$" : "R$";
@@ -56,18 +58,18 @@ export function BenchmarkingContent({ groupId, gameCode, period, maxPeriod, benc
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight text-[#1A365D]">{t.benchmarkingTitle}</h1>
-          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{t.quarter} {period}</Badge>
+          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{periodLabel} {period}</Badge>
         </div>
         <p className="mt-2 text-[#64748B]">{t.benchmarkingSubtitle(gameCode)}</p>
       </div>
 
       <div className="mb-8 flex items-center gap-2">
-        <span className="text-sm font-medium text-[#64748B]">{t.periodLabel}:</span>
+        <span className="text-sm font-medium text-[#64748B]">{periodLabel}:</span>
         <div className="flex gap-1">
           {periods.map((p) => (
             <Link key={p} href={`/game/${groupId}/benchmarking?period=${p}`}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${p === period ? "bg-[#1A365D] text-white" : "bg-white text-[#64748B] hover:bg-[#1A365D]/10 hover:text-[#1A365D]"}`}>
-              T{p}
+              {periodLabelShort}{p}
             </Link>
           ))}
         </div>
@@ -107,7 +109,7 @@ export function BenchmarkingContent({ groupId, gameCode, period, maxPeriod, benc
           {/* Main ranking table */}
           <Card className="overflow-hidden">
             <CardHeader className="bg-[#1A365D] py-3">
-              <CardTitle className="text-base text-white">{t.overallRanking} — {t.quarter} {period}</CardTitle>
+              <CardTitle className="text-base text-white">{t.overallRanking} — {periodLabel} {period}</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto p-0">
               <Table>

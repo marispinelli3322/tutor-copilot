@@ -15,6 +15,8 @@ interface Props {
   period: number;
   maxPeriod: number;
   profData: ProfitabilityData[];
+  periodLabel: string;
+  periodLabelShort: string;
 }
 
 function formatCurrency(n: number, locale: string): string {
@@ -32,7 +34,7 @@ function marginColor(pct: number): string {
   return "text-red-700 font-bold";
 }
 
-export function ProfitabilityContent({ groupId, gameCode, period, maxPeriod, profData }: Props) {
+export function ProfitabilityContent({ groupId, gameCode, period, maxPeriod, profData, periodLabel, periodLabelShort }: Props) {
   const { locale, t } = useLocale();
   const periods = Array.from({ length: maxPeriod }, (_, i) => i + 1);
 
@@ -52,18 +54,18 @@ export function ProfitabilityContent({ groupId, gameCode, period, maxPeriod, pro
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight text-[#1A365D]">{t.profitabilityTitle}</h1>
-          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{t.quarter} {period}</Badge>
+          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{periodLabel} {period}</Badge>
         </div>
         <p className="mt-2 text-[#64748B]">{t.profitabilitySubtitle(gameCode)}</p>
       </div>
 
       <div className="mb-8 flex items-center gap-2">
-        <span className="text-sm font-medium text-[#64748B]">{t.periodLabel}:</span>
+        <span className="text-sm font-medium text-[#64748B]">{periodLabel}:</span>
         <div className="flex gap-1">
           {periods.map((p) => (
             <Link key={p} href={`/game/${groupId}/profitability?period=${p}`}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${p === period ? "bg-[#1A365D] text-white" : "bg-white text-[#64748B] hover:bg-[#1A365D]/10 hover:text-[#1A365D]"}`}>
-              T{p}
+              {periodLabelShort}{p}
             </Link>
           ))}
         </div>

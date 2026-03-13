@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { getGameDetails } from "@/lib/data-provider";
+import { detectGameType, getGameConfig } from "@/lib/game-config";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { FacilitationPageContent } from "./facilitation-page-content";
@@ -21,6 +22,8 @@ export default async function FacilitationPage({ params, searchParams }: PagePro
   const game = await getGameDetails(gid);
   if (!game) return notFound();
 
+  const gameType = detectGameType(game.jogo_nome);
+  const config = getGameConfig(gameType);
   const period = periodStr ? parseInt(periodStr, 10) : game.ultimo_periodo_processado;
 
   return (
@@ -31,6 +34,8 @@ export default async function FacilitationPage({ params, searchParams }: PagePro
         gameCode={game.codigo}
         period={period}
         maxPeriod={game.ultimo_periodo_processado}
+        periodLabel={config.periodLabel}
+        periodLabelShort={config.periodLabelShort}
       />
     </div>
   );

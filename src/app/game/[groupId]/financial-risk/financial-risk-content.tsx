@@ -15,6 +15,8 @@ interface Props {
   period: number;
   maxPeriod: number;
   riskData: FinancialRiskData[];
+  periodLabel: string;
+  periodLabelShort: string;
 }
 
 function riskBadge(status: FinancialRiskData["riskStatus"], labels: { healthy: string; attention: string; critical: string }) {
@@ -48,7 +50,7 @@ function fmtCurrency(n: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "decimal", maximumFractionDigits: 0 }).format(n);
 }
 
-export function FinancialRiskContent({ groupId, gameCode, period, maxPeriod, riskData }: Props) {
+export function FinancialRiskContent({ groupId, gameCode, period, maxPeriod, riskData, periodLabel, periodLabelShort }: Props) {
   const { t } = useLocale();
   const periods = Array.from({ length: maxPeriod }, (_, i) => i + 1);
 
@@ -69,18 +71,18 @@ export function FinancialRiskContent({ groupId, gameCode, period, maxPeriod, ris
         <div className="flex items-center gap-3">
           <AlertTriangle className="h-7 w-7 text-[#1A365D]" />
           <h1 className="text-3xl font-bold tracking-tight text-[#1A365D]">{t.financialRiskTitle}</h1>
-          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{t.quarter} {period}</Badge>
+          <Badge className="bg-[#C5A832] text-white hover:bg-[#8B7523]">{periodLabel} {period}</Badge>
         </div>
         <p className="mt-2 text-[#64748B]">{t.financialRiskSubtitle(gameCode)}</p>
       </div>
 
       <div className="mb-8 flex items-center gap-2">
-        <span className="text-sm font-medium text-[#64748B]">{t.periodLabel}:</span>
+        <span className="text-sm font-medium text-[#64748B]">{periodLabel}:</span>
         <div className="flex gap-1">
           {periods.map((p) => (
             <Link key={p} href={`/game/${groupId}/financial-risk?period=${p}`}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${p === period ? "bg-[#1A365D] text-white" : "bg-white text-[#64748B] hover:bg-[#1A365D]/10 hover:text-[#1A365D]"}`}>
-              T{p}
+              {periodLabelShort}{p}
             </Link>
           ))}
         </div>
@@ -121,7 +123,7 @@ export function FinancialRiskContent({ groupId, gameCode, period, maxPeriod, ris
           {/* Main risk table */}
           <Card className="overflow-hidden">
             <CardHeader className="bg-[#1A365D] py-3">
-              <CardTitle className="text-base text-white">{t.financialRiskTitle} — {t.quarter} {period}</CardTitle>
+              <CardTitle className="text-base text-white">{t.financialRiskTitle} — {periodLabel} {period}</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto p-0">
               <Table>

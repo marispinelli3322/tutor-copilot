@@ -1,6 +1,6 @@
 import { Header } from "@/components/header";
 import { getGameDetails, getEfficiencyData } from "@/lib/data-provider";
-import { detectGameType } from "@/lib/game-config";
+import { detectGameType, getGameConfig } from "@/lib/game-config";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { EfficiencyContent } from "./efficiency-content";
@@ -30,7 +30,12 @@ export default async function EfficiencyPage({
     ? parseInt(periodStr, 10)
     : game.ultimo_periodo_processado;
 
+  const config = getGameConfig(gameType);
   const efficiency = await getEfficiencyData(gid, period, gameType);
+  const serviceKeys = Object.keys(efficiency);
+  const serviceNames = Object.fromEntries(
+    Object.entries(efficiency).map(([k, v]) => [k, v.service])
+  );
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -41,6 +46,10 @@ export default async function EfficiencyPage({
         period={period}
         maxPeriod={game.ultimo_periodo_processado}
         efficiency={efficiency}
+        periodLabel={config.periodLabel}
+        periodLabelShort={config.periodLabelShort}
+        serviceKeys={serviceKeys}
+        serviceNames={serviceNames}
       />
     </div>
   );

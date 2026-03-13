@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { getGameDetails, getGameTeams } from "@/lib/data-provider";
+import { detectGameType, getGameConfig } from "@/lib/game-config";
 import { getSession } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { SquadContent } from "./squad-content";
@@ -19,6 +20,8 @@ export default async function SquadPage({ params }: PageProps) {
   const game = await getGameDetails(gid);
   if (!game) return notFound();
 
+  const gameType = detectGameType(game.jogo_nome);
+  const config = getGameConfig(gameType);
   const teams = await getGameTeams(gid);
 
   return (
@@ -30,6 +33,8 @@ export default async function SquadPage({ params }: PageProps) {
         lastPeriod={game.ultimo_periodo_processado}
         professor={game.professor ?? null}
         teamCount={teams.length}
+        periodLabel={config.periodLabel}
+        periodLabelShort={config.periodLabelShort}
       />
     </div>
   );

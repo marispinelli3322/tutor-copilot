@@ -42,9 +42,11 @@ interface Props {
   lastPeriod: number;
   professor: string | null;
   teamCount: number;
+  periodLabel: string;
+  periodLabelShort: string;
 }
 
-export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCount }: Props) {
+export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCount, periodLabel, periodLabelShort }: Props) {
   const [activePeriod, setActivePeriod] = useState<number | null>(null);
   const [messages, setMessages] = useState<SquadMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -239,7 +241,7 @@ export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCou
           </div>
 
           <p className="text-sm text-gray-500 mb-6 mt-4">
-            Selecione o trimestre para iniciar ou continuar a análise com o Squad.
+            Selecione o {periodLabel.toLowerCase()} para iniciar ou continuar a análise com o Squad.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -258,7 +260,7 @@ export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCou
                 >
                   <div className="flex items-center justify-between">
                     <span className={`text-lg font-bold ${isLatest ? "text-[#1A365D]" : "text-gray-700"}`}>
-                      Trimestre {p}
+                      {periodLabel} {p}
                     </span>
                     {isLatest && (
                       <span className="text-[10px] font-medium uppercase tracking-wide bg-[#C5A832] text-white px-2 py-0.5 rounded-full">
@@ -273,13 +275,13 @@ export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCou
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm(`Limpar conversa do Trimestre ${p}?`)) {
+                        if (confirm(`Limpar conversa do ${periodLabel} ${p}?`)) {
                           clearPeriodConversation(groupId, p);
                           setSavedPeriods(getPeriodsWithConversations(groupId));
                         }
                       }}
                       className="absolute top-3 right-3 p-1 text-gray-300 hover:text-red-400 transition-colors"
-                      title="Limpar conversa deste trimestre"
+                      title={`Limpar conversa deste ${periodLabel.toLowerCase()}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -317,7 +319,7 @@ export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCou
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-[#64748B] hover:text-[#1A365D]"
       >
         <ArrowLeft className="h-4 w-4" />
-        Voltar aos trimestres
+        Voltar aos {periodLabel.toLowerCase()}s
       </button>
 
       <div className="flex flex-col h-[calc(100vh-10rem)] bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -327,7 +329,7 @@ export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCou
           <div>
             <div className="font-semibold text-sm text-[#1A365D]">Simulation Squad</div>
             <div className="text-xs text-gray-500">
-              {gameCode} — Trimestre {activePeriod} — {teamCount} equipes{professor ? ` — Prof. ${professor}` : ""}
+              {gameCode} — {periodLabel} {activePeriod} — {teamCount} equipes{professor ? ` — Prof. ${professor}` : ""}
             </div>
           </div>
 
@@ -348,7 +350,7 @@ export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCou
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    if (confirm(`Limpar conversa do Trimestre ${activePeriod}?`)) {
+                    if (confirm(`Limpar conversa do ${periodLabel} ${activePeriod}?`)) {
                       clearPeriodConversation(groupId, activePeriod);
                       setMessages([]);
                       setSavedPeriods(getPeriodsWithConversations(groupId));
@@ -409,7 +411,7 @@ export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCou
             {messages.length === 0 && !isStreaming && (
               <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
                 <p className="text-sm text-gray-500 mb-8 max-w-sm">
-                  O Squad está pronto para analisar o Trimestre {activePeriod}.
+                  O Squad está pronto para analisar o {periodLabel} {activePeriod}.
                 </p>
                 <Button
                   onClick={runAnalysis}
@@ -417,7 +419,7 @@ export function SquadContent({ groupId, gameCode, lastPeriod, professor, teamCou
                   className="bg-[#1A365D] hover:bg-[#234681] text-white gap-2 px-8 py-3 text-base rounded-xl shadow-md hover:shadow-lg transition-all"
                 >
                   <Play className="h-5 w-5" />
-                  Iniciar Análise — T{activePeriod}
+                  Iniciar Análise — {periodLabelShort}{activePeriod}
                 </Button>
                 <div className="mt-8 flex flex-wrap justify-center gap-2">
                   {SUGGESTED_PROMPTS.map((prompt) => (
