@@ -91,6 +91,12 @@ export const ESG_FINANCIAL_RISK_CODES = [
   "ctaCaixaPagamentoEmprestimo",
   "ctaCaixaReceitaVenda",
   "dreLucroOperacional",
+  // Balanço Patrimonial — composição do PL para análise de solvência
+  "capitalSocial",
+  "balancoCapitalSocial",
+  "balancoLucroPrejuizoAcumulado",
+  "resultadoAcumuladoAtual",
+  "resultadoAcumuladoAtualAntesDistribuicao",
 ] as const;
 
 // ── M7: Alinhamento Estratégico ──────────────────────────────

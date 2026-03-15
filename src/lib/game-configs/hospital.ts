@@ -64,6 +64,12 @@ export const HOSPITAL_BENCHMARKING_CODES = [
   "despesasTotais",
   "resultadoBruto",
   "resultadoAntesDosImpostos",
+  // Balanço Patrimonial — composição do PL
+  "totalAtivo",
+  "totalPassivo",
+  "capitalSocial",
+  "balancoLucroPrejuizoAcumulado",
+  "resultadoAcumuladoAtual",
 ] as const;
 
 export const HOSPITAL_TIMESERIES_CODES = [
@@ -88,6 +94,10 @@ export const HOSPITAL_FINANCIAL_RISK_CODES = [
   "taxa_juros_emprestimo",
   "planoEmergencial",
   "receitaLiquidaTotal",
+  // Balanço Patrimonial — composição do PL para análise de solvência
+  "capitalSocial",
+  "balancoLucroPrejuizoAcumulado",
+  "resultadoAcumuladoAtual",
 ] as const;
 
 export const HOSPITAL_STRATEGY_RESULT_CODES = [

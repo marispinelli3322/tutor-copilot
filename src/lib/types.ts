@@ -58,6 +58,12 @@ export interface BenchmarkData {
   registeredDoctors: number;
   nwc: number;
   overallRanking: number;
+  // Balanço Patrimonial
+  totalAtivo: number;
+  totalPassivo: number;
+  patrimonioLiquido: number;
+  capitalSocial: number;
+  resultadoAcumulado: number;
 }
 
 export interface AnalysisModule {
@@ -106,10 +112,14 @@ export interface FinancialRiskData {
   taxaJurosEmprestimo: number;
   planoEmergencial: number;
   receitaLiquidaTotal: number;
+  // Balanço Patrimonial — composição do PL
+  capitalSocial: number;
+  resultadoAcumulado: number;
   // Computed KPIs
   alavancagem: number;
   coberturaCaixa: number;
   variacaoCaixa: number;
+  insolvente: boolean;
   riskStatus: "healthy" | "attention" | "critical";
 }
 

@@ -280,6 +280,11 @@ export const BENCHMARKING_CODES = [
   "despesasTotais",
   "resultadoBruto",
   "resultadoAntesDosImpostos",
+  "totalAtivo",
+  "totalPassivo",
+  "capitalSocial",
+  "balancoLucroPrejuizoAcumulado",
+  "resultadoAcumuladoAtual",
 ] as const;
 
 export const TIMESERIES_CODES = [
@@ -304,6 +309,9 @@ export const FINANCIAL_RISK_CODES = [
   "taxa_juros_emprestimo",
   "planoEmergencial",
   "receitaLiquidaTotal",
+  "capitalSocial",
+  "balancoLucroPrejuizoAcumulado",
+  "resultadoAcumuladoAtual",
 ] as const;
 
 export const STRATEGY_RESULT_CODES = [

@@ -346,6 +346,12 @@ export async function getBenchmarkingData(
       ? (vars.margemOperacional || (netRevenue > 0 ? (opIncome / netRevenue) * 100 : 0))
       : (netRevenue > 0 ? (opIncome / netRevenue) * 100 : 0);
 
+    const totalAtivo = vars.totalAtivo || vars.balancoAtivoTotal || 0;
+    const totalPassivo = vars.totalPassivo || vars.balancoPassivoTotal || 0;
+    const pl = vars.patrimonioLiquido || 0;
+    const capitalSocial = vars.capitalSocial || vars.balancoCapitalSocial || 0;
+    const resultadoAcumulado = vars.balancoLucroPrejuizoAcumulado || vars.resultadoAcumuladoAtual || 0;
+
     result.push({
       team: d.team_name,
       teamNumber: d.team_number,
@@ -363,6 +369,11 @@ export async function getBenchmarkingData(
         : (vars.medicosCadastrados || 0),
       nwc,
       overallRanking: ranking,
+      totalAtivo,
+      totalPassivo,
+      patrimonioLiquido: pl,
+      capitalSocial,
+      resultadoAcumulado,
     });
   }
 
@@ -498,12 +509,16 @@ export async function getFinancialRiskData(
     const planoEmergencial = vars.planoEmergencial || 0;
     const receitaLiquidaTotal = vars.receitaLiquidaTotal || vars.ctaCaixaReceitaVenda || 0;
 
+    const capitalSocialVal = vars.capitalSocial || vars.balancoCapitalSocial || 0;
+    const resultadoAcumuladoVal = vars.balancoLucroPrejuizoAcumulado || vars.resultadoAcumuladoAtual || 0;
+    const insolvente = patrimonioLiquido <= 0;
+
     const alavancagem = patrimonioLiquido !== 0 ? totalPassivo / patrimonioLiquido : 0;
     const coberturaCaixa = receitaLiquidaTotal > 0 ? (saldoFinal / receitaLiquidaTotal) * 100 : 0;
     const variacaoCaixa = saldoFinal - saldoInicialTrimestre;
 
     let riskStatus: "healthy" | "attention" | "critical" = "healthy";
-    if (capitalCirculanteLiq < 0 || planoEmergencial > 0) {
+    if (capitalCirculanteLiq < 0 || planoEmergencial > 0 || insolvente) {
       riskStatus = "critical";
     } else if (creditoRotativo > 0) {
       riskStatus = "attention";
@@ -526,9 +541,12 @@ export async function getFinancialRiskData(
       taxaJurosEmprestimo: vars.taxa_juros_emprestimo || vars.outrasInfosTaxaJurosEmprestimos || 0,
       planoEmergencial,
       receitaLiquidaTotal,
+      capitalSocial: capitalSocialVal,
+      resultadoAcumulado: resultadoAcumuladoVal,
       alavancagem,
       coberturaCaixa,
       variacaoCaixa,
+      insolvente,
       riskStatus,
     });
   }
