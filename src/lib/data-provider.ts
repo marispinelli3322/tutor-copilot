@@ -910,6 +910,38 @@ export async function getLostRevenueData(
   return result;
 }
 
+// ── Squad Full Report Data ──────────────────────────────────
+
+/**
+ * Fetch raw variable data for any set of codes. Returns teamNumber → { codigo: valor }.
+ * Used by Squad data-fetcher to build complete report context.
+ */
+export async function getRawVariableData(
+  groupId: number,
+  period: number,
+  codes: readonly string[],
+  gameType: GameType = "hospital"
+): Promise<Record<number, Record<string, number> & { team_name: string; team_number: number }>> {
+  if (codes.length === 0) return {};
+  const isESG = gameType === "esg";
+  const { getTeamVariablesPivot } = await import("./queries");
+  return getTeamVariablesPivot(groupId, period, [...codes], isESG);
+}
+
+/**
+ * Fetch all decisions (item_decisao) for given codes.
+ */
+export async function getAllDecisionsData(
+  groupId: number,
+  period: number,
+  codes: readonly string[],
+  gameType: GameType = "hospital"
+): Promise<Record<number, Record<string, number> & { team_name: string; team_number: number }>> {
+  if (codes.length === 0) return {};
+  const { getTeamDecisions } = await import("./queries");
+  return getTeamDecisions(groupId, period, [...codes]);
+}
+
 // ── Environmental (ESG-only) ────────────────────────────────
 
 export interface EnvironmentalData {

@@ -224,6 +224,120 @@ export const HOSPITAL_LOST_REVENUE_CODES = [
   "demandaFinal_altaComplexidade",
 ] as const;
 
+// ── Squad Full Context — Report Codes ─────────────────────────
+
+export const HOSPITAL_DRE_CODES = [
+  "receitas", "receitasOperacionais", "receitaLiquidaTotal", "receitaFinanceira",
+  "resultadoBruto", "despesasTotais", "resultadoAntesDosImpostos", "imposto_de_renda",
+  "resultadoOperacionalLiquido", "resultadoOperacionalLiquidoAcumulado",
+  "resultadoAcumuladoAtual", "resultadoAnteriorAcumulado",
+  "dividendosDistribuidos", "depreciacao", "gastosInsumosOutros",
+  "salariosEncargos", "gastosHoraExtra", "beneficiosFuncionarios", "participacaoLucros",
+] as const;
+
+export const HOSPITAL_BALANCE_SHEET_FULL_CODES = [
+  "balancoAtivoTotal", "balancoPassivoTotal", "balancoCaixa", "balancoAplicacoesFinanceiras",
+  "balancoEstoques", "balancoImobilizado", "balancoEmprestimos", "balancoCreditoRotativo",
+  "balancoCapitalSocial", "balancoLucroPrejuizoAcumulado",
+  "capitalSocial", "patrimonioLiquido", "totalAtivo", "totalPassivo",
+  "capitalCirculanteLiq", "ativoCirculante", "passivoCirculante",
+] as const;
+
+export const HOSPITAL_CASH_FLOW_EXTRA_CODES = [
+  "saldoInicialTrimestre", "saldoFinal", "saldoAntesAplicacaoEmprestimo",
+  "entradas", "saidas", "superAvit",
+  "creditoRotativo", "utilizacaoCreditoRotativo",
+  "despesaCreditoRotativo", "despesa_emprestimo",
+  "taxa_juros_emprestimo", "planoEmergencial",
+  "hospitalPercentualCreditoRotativo", "hospitalPercentualRendimentoAplicacao",
+  "hospitalPercentualTaxaMaxJurosEmprestimo", "hospitalPercentualTaxaMinJurosEmprestimo",
+] as const;
+
+export const HOSPITAL_FINANCIAL_INDICATORS_CODES = [
+  "liquidezCorrente", "liquidezSeca", "liquidezGeral", "liquidezImediata",
+  "giroDoAtivo", "endividamentoGeral",
+  "imobilizadoDoPatrimonioLiquido", "imobilizadoDeRecursosNaoCorrentes",
+  "rentabilidadeDoPatrimonioLiquido", "rentabilidadeDosInvestimentos",
+  "retornoSobrePatrimonioLiquido", "passivosOnerososSobreAtivos",
+  "margemBruta", "margemOperacional", "margemLiquida",
+] as const;
+
+export const HOSPITAL_HR_OPERATIONS_CODES = [
+  "colaboradores_admin", "colaboradores_saude", "colaboradoresOciosos",
+  "colaboradoresDisponiveis_prontoAtendimento", "colaboradoresDisponiveis_internacao", "colaboradoresDisponiveis_altaComplexidade",
+  "colaboradoresNecessarios_prontoAtendimento", "colaboradoresNecessarios_internacao", "colaboradoresNecessarios_altaComplexidade",
+  "colaboradoresEquivalentes_prontoAtendimento", "colaboradoresEquivalentes_internacao", "colaboradoresEquivalentes_altaComplexidade",
+  "usoMaoOBraExtra", "totalDispensa", "dispensa", "treinamento", "diasDeGreve",
+  "medicosCadastrados", "compraDeInformacoes",
+  // Leitos
+  "fdAtivos_leitosoperacionais", "fdAtivos_leitosuti",
+  "fdDisponiveis_leitosoperacionais", "fdDisponiveis_leitosuti",
+  "leitosAdquiridosOuReformadosleitosoperacionais", "leitosAdquiridosOuReformadosleitosuti",
+  "novoValorLeitosleitosoperacionais", "novoValorLeitosleitosuti",
+  "imobilizadoFabricaFinal", "imobilizadoFabricaInicial",
+  "investimentoCapital",
+] as const;
+
+export const HOSPITAL_RANKING_DETAIL_CODES = [
+  "colocacaoRankingPeriodo", "numeroPontosPeriodo",
+  "numeroPontos_valor_acao", "numeroPontos_medicosCadastrados",
+  "numeroPontos_receitaLiquidaTotal", "numeroPontos_resultadoOperacionalLiquidoAcumulado",
+  "numeroPontos_capitalCirculanteLiq", "numeroPontos_vidasAtendidas",
+  "numeroPontos_governancaCorporativa",
+  "numeroOrdem_valor_acao", "numeroOrdem_medicosCadastrados",
+  "numeroOrdem_receitaLiquidaTotal", "numeroOrdem_resultadoOperacionalLiquidoAcumulado",
+  "numeroOrdem_capitalCirculanteLiq", "numeroOrdem_vidasAtendidas",
+  "numeroOrdem_governancaCorporativa",
+  "reducao",
+] as const;
+
+export const HOSPITAL_MARKET_STATS_CODES = [
+  "estatisticasValorAcaoMin", "estatisticasValorAcaoMed", "estatisticasValorAcaoMax",
+  "estatisticasReceitasOperacionaisServicosMin", "estatisticasReceitasOperacionaisServicosMed", "estatisticasReceitasOperacionaisServicosMax",
+  "estatisticasResultadoOperacionalLiquidoMin", "estatisticasResultadoOperacionalLiquidoMed", "estatisticasResultadoOperacionalLiquidoMax",
+  "estatisticasSalariosEncargosMin", "estatisticasSalariosEncargosMed", "estatisticasSalariosEncargosMax",
+  "estatisticasBeneficiosFuncionariosMin", "estatisticasBeneficiosFuncionariosMed", "estatisticasBeneficiosFuncionariosMax",
+  "estatisticasColaboradoresMin", "estatisticasColaboradoresMed", "estatisticasColaboradoresMax",
+  "estatisticasDividendosMin", "estatisticasDividendosMed", "estatisticasDividendosMax",
+  "estatisticasImagemCorporativaMin", "estatisticasImagemCorporativaMed", "estatisticasImagemCorporativaMax",
+  "estatisticasInovacaoTecnologiaMin", "estatisticasInovacaoTecnologiaMed", "estatisticasInovacaoTecnologiaMax",
+  "estatisticasCertificacoesInternacionaisMin", "estatisticasCertificacoesInternacionaisMed", "estatisticasCertificacoesInternacionaisMax",
+  "estatisticasTaxaInfeccaoUtiMin", "estatisticasTaxaInfeccaoUtiMed", "estatisticasTaxaInfeccaoUtiMax",
+  "estatisticasMedicosCadastradosMin", "estatisticasMedicosCadastradosMed", "estatisticasMedicosCadastradosMax",
+  "estatisticasLeitosOperacionaisAtivosMin", "estatisticasLeitosOperacionaisAtivosMed", "estatisticasLeitosOperacionaisAtivosMax",
+  "estatisticasLeitosOperacionaisDisponiveisMin", "estatisticasLeitosOperacionaisDisponiveisMed", "estatisticasLeitosOperacionaisDisponiveisMax",
+  "estatisticasLeitosUtiAtivosMin", "estatisticasLeitosUtiAtivosMed", "estatisticasLeitosUtiAtivosMax",
+  "estatisticasLeitosUitDisponiveisMin", "estatisticasLeitosUitDisponiveisMed", "estatisticasLeitosUitDisponiveisMax",
+  "estatisticasUnidadesPaAtivasMin", "estatisticasUnidadesPaAtivasMed", "estatisticasUnidadesPaAtivasMax",
+  "estatisticasParticipacaoLucrosMin", "estatisticasParticipacaoLucrosMed", "estatisticasParticipacaoLucrosMax",
+  "estatisticasSalarioMedioMin", "estatisticasSalarioMedioMed", "estatisticasSalarioMedioMax",
+  "estatisticasLucroLiqMin", "estatisticasLucroLiqMed", "estatisticasLucroLiqMax",
+] as const;
+
+// All decision codes from item_decisao (Bloco F)
+export const HOSPITAL_ALL_DECISION_CODES = [
+  // Pricing
+  "fdreceitapa", "fdreceitaint", "fdreceitaaltacomplexidade",
+  // Convenios
+  "boaSaude", "goodShape", "healthy", "outras", "particulares", "tipTop", "unique",
+  // Infrastructure
+  "fdNovos_leitosoperacionais", "fdNovos_leitosuti",
+  "fdPercentualAtivos_leitosoperacionais", "fdPercentualAtivos_leitosuti",
+  "fdunidadespa",
+  // HR
+  "fdcolaboradores", "fdsalariotrimestral", "fdbeneficiosportrabalhador",
+  "fdmaxhorasextras", "fdparticipacaotrimestrallucros",
+  // Investments
+  "fdinvestimentocertificaointernacional", "fdinvestimentocontroleinfeccao",
+  "fdinvestimentodescartelixo", "fdinvestimentoterceirizarlixo",
+  "fdinvestimentoimagemcorporativa", "fdinvestimentoinovacaotecnologia",
+  // Financial
+  "fdaplicacaoFinanceira", "fdEmprestimos", "fdDividendos",
+  "fdOutrasEntradas", "fdOutrasSaidas",
+  // Transparency
+  "fdLiberarRelatoriosFinanceirosHospitais",
+] as const;
+
 export const HOSPITAL_CONVENIOS = ["boaSaude", "goodShape", "healthy", "outras", "particulares", "tipTop", "unique"] as const;
 
 export const HOSPITAL_SERVICES_PRICING = [
